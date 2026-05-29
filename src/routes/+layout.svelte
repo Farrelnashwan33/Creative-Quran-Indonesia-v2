@@ -455,7 +455,7 @@
 
   <!-- ADZAN ALERT POPUP OVERLAY -->
   {#if showAdzanModal}
-    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-fade-in">
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
       <div class="glass-emerald border border-emerald-500/30 p-8 rounded-3xl text-center max-w-sm w-full space-y-6 shadow-2xl relative overflow-hidden">
         <div class="absolute inset-0 opacity-5 bg-repeat bg-size-[30px] pointer-events-none islamic-bg"></div>
         
@@ -486,7 +486,7 @@
 
   <!-- PREMIUM MEMBERSHIP GO-PAY MODAL -->
   {#if $showPremiumPaymentModal}
-    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-fade-in">
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
       <div class="glass border border-amber-500/30 p-6 rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative overflow-hidden">
         <!-- Background pattern overlay -->
         <div class="absolute inset-0 opacity-5 bg-repeat bg-size-[30px] pointer-events-none islamic-bg"></div>
@@ -573,7 +573,7 @@
 
   <!-- TOAST ALERTS -->
   {#if showToast}
-    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-amber-600 border border-amber-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-200 animate-fade-in flex items-center gap-2">
+    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-amber-600 border border-amber-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-[200] animate-fade-in flex items-center gap-2">
       <Crown class="w-4 h-4 text-amber-100 fill-amber-100" />
       <span>{toastMessage}</span>
     </div>
