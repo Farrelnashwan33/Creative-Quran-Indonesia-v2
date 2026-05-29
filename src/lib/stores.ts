@@ -1,19 +1,22 @@
 import { writable } from 'svelte/store';
 
-// Helper for localstorage persistence
 function createPersistentStore<T>(key: string, initialValue: T) {
   // Check if window is defined (browser side)
   const isBrowser = typeof window !== 'undefined';
   
   let value = initialValue;
   if (isBrowser) {
-    const storedValue = localStorage.getItem(key);
-    if (storedValue) {
-      try {
-        value = JSON.parse(storedValue);
-      } catch (e) {
-        console.error(`Error parsing localStorage key "${key}":`, e);
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        try {
+          value = JSON.parse(storedValue);
+        } catch (e) {
+          console.error(`Error parsing localStorage key "${key}":`, e);
+        }
       }
+    } catch (e) {
+      console.warn(`LocalStorage read failed for key "${key}":`, e);
     }
   }
 
@@ -24,14 +27,22 @@ function createPersistentStore<T>(key: string, initialValue: T) {
     set: (newValue: T) => {
       store.set(newValue);
       if (isBrowser) {
-        localStorage.setItem(key, JSON.stringify(newValue));
+        try {
+          localStorage.setItem(key, JSON.stringify(newValue));
+        } catch (e) {
+          console.warn(`LocalStorage write failed for key "${key}":`, e);
+        }
       }
     },
     update: (updater: (value: T) => T) => {
       store.update((oldValue) => {
         const newValue = updater(oldValue);
         if (isBrowser) {
-          localStorage.setItem(key, JSON.stringify(newValue));
+          try {
+            localStorage.setItem(key, JSON.stringify(newValue));
+          } catch (e) {
+            console.warn(`LocalStorage write failed for key "${key}":`, e);
+          }
         }
         return newValue;
       });

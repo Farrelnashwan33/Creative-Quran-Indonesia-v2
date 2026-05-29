@@ -32,12 +32,20 @@
     if (!query.trim()) return;
     const clean = query.trim();
     recentSearches = [clean, ...recentSearches.filter(x => x !== clean)].slice(0, 5);
-    localStorage.setItem('quran_recent_searches', JSON.stringify(recentSearches));
+    try {
+      localStorage.setItem('quran_recent_searches', JSON.stringify(recentSearches));
+    } catch (e) {
+      console.warn("Failed to write to localStorage:", e);
+    }
   }
 
   function clearHistory() {
     recentSearches = [];
-    localStorage.removeItem('quran_recent_searches');
+    try {
+      localStorage.removeItem('quran_recent_searches');
+    } catch (e) {
+      console.warn("Failed to remove from localStorage:", e);
+    }
   }
 
   // Filter surahs based on search query

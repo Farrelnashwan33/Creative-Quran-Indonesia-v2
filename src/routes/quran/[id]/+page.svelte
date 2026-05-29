@@ -111,12 +111,16 @@
     let lon = 106.8456;
     let cityName = 'Jakarta';
     
-    const stored = localStorage.getItem('quran_location');
-    if (stored) {
-      const loc = JSON.parse(stored);
-      lat = loc.latitude;
-      lon = loc.longitude;
-      cityName = loc.cityName;
+    try {
+      const stored = localStorage.getItem('quran_location');
+      if (stored) {
+        const loc = JSON.parse(stored);
+        lat = loc.latitude;
+        lon = loc.longitude;
+        cityName = loc.cityName;
+      }
+    } catch (e) {
+      console.warn("LocalStorage access failed:", e);
     }
     
     try {

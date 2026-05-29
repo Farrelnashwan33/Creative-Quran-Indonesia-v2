@@ -60,7 +60,12 @@
     greeting = getGreeting();
     dailyQuote = islamicQuotes[Math.floor(Math.random() * islamicQuotes.length)];
     
-    const stored = localStorage.getItem('quran_location');
+    let stored = null;
+    try {
+      stored = localStorage.getItem('quran_location');
+    } catch (e) {
+      console.warn("LocalStorage access failed:", e);
+    }
     if (!stored) {
       autoDetectLocation();
     }
