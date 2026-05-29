@@ -41,9 +41,7 @@
     userEmail.set(emailInput || '');
     const cleanEmail = (emailInput || '').trim().toLowerCase();
     if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
-      let currentAdmin = false;
-      isAdmin.subscribe(v => currentAdmin = v)();
-      if (currentAdmin) {
+      if (adminActive) {
         isAdmin.set(false);
       }
     }
@@ -69,9 +67,7 @@
       emailInput = val || '';
       const cleanEmail = emailInput.trim().toLowerCase();
       if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
-        let currentAdmin = false;
-        isAdmin.subscribe(v => currentAdmin = v)();
-        if (currentAdmin) {
+        if (adminActive) {
           isAdmin.set(false);
         }
       }

@@ -201,9 +201,7 @@
     const unsubscribeEmail = userEmail.subscribe(val => {
       const cleanEmail = (val || '').trim().toLowerCase();
       if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
-        let currentAdmin = false;
-        isAdmin.subscribe(v => currentAdmin = v)();
-        if (currentAdmin) {
+        if (adminActive) {
           isAdmin.set(false);
         }
       }
