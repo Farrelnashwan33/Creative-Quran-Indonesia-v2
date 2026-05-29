@@ -286,7 +286,7 @@
 </svelte:head>
 
 {#if mounted}
-<div class="min-h-screen flex flex-col md:flex-row islamic-bg soft-gradient transition-colors duration-300 {premiumActive ? 'premium-theme' : ''}">
+<div class="min-h-screen flex flex-col md:flex-row islamic-bg soft-gradient {premiumActive ? 'premium-theme' : ''}">
   
   <!-- DESKTOP SIDEBAR -->
   <aside class="desktop-sidebar hidden md:flex flex-col w-64 lg:w-72 glass border-r border-white/5 p-6 h-screen sticky top-0 shrink-0 z-20 justify-between {premiumActive ? 'premium-border' : ''}">
