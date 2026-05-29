@@ -1,0 +1,228 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Amiri:ital,wght@0,400;0,700;1,400;1,700&family=Scheherazade+New:wght@400;700&family=Lateef:wght@200;300;400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+
+@theme {
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-arabic-utsmani: 'Amiri', 'Scheherazade New', serif;
+  --font-arabic-indopak: 'Lateef', serif;
+
+  --color-primary-50: #f0fdf4;
+  --color-primary-100: #dcfce7;
+  --color-primary-200: #bbf7d0;
+  --color-primary-600: #16a34a;
+  --color-primary-700: #15803d;
+  
+  --color-emerald-50: #ecfdf5;
+  --color-emerald-100: #d1fae5;
+  --color-emerald-500: #10b981;
+  --color-emerald-600: #059669;
+  --color-emerald-700: #047857;
+  --color-emerald-800: #065f46;
+  --color-emerald-900: #064e3b;
+  --color-emerald-950: #022c22;
+  
+  --color-gold-50: #fffbeb;
+  --color-gold-100: #fef3c7;
+  --color-gold-400: #fbbf24;
+  --color-gold-500: #f59e0b;
+  --color-gold-600: #d97706;
+  --color-gold-700: #b45309;
+
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-shimmer: shimmer 2s linear infinite;
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+}
+
+/* Global Styles */
+html, body {
+  font-family: var(--font-sans);
+  background-color: #030712; /* Default dark background */
+  color: #f3f4f6;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+}
+
+/* Scrollbar Styles */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.2);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.4);
+}
+
+/* Light Mode Override */
+:global(html.light-mode) {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+:global(html.light-mode body) {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+:global(html.light-mode) ::-webkit-scrollbar-thumb {
+  background: rgba(16, 185, 129, 0.15);
+}
+:global(html.light-mode) ::-webkit-scrollbar-thumb:hover {
+  background: rgba(16, 185, 129, 0.35);
+}
+
+/* Glassmorphism Helpers */
+.glass {
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+:global(.light-mode) .glass {
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(16, 185, 129, 0.08);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
+}
+
+.glass-emerald {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.2) 0%, rgba(2, 44, 34, 0.35) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+:global(.light-mode) .glass-emerald {
+  background: linear-gradient(135deg, rgba(209, 250, 229, 0.7) 0%, rgba(240, 253, 244, 0.8) 100%);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+/* Custom Islamic Patterns & Backgrounds */
+.islamic-bg {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+:global(.light-mode) .islamic-bg {
+  background-image: radial-gradient(rgba(16, 185, 129, 0.04) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+/* Soft gradients */
+.soft-gradient {
+  background: linear-gradient(135deg, var(--color-emerald-950) 0%, #030712 100%);
+}
+:global(.light-mode) .soft-gradient {
+  background: linear-gradient(135deg, #f0fdf4 0%, #f8fafc 100%);
+}
+
+/* Tajwid Coloring */
+.tajwid-ghunnah { color: #f59e0b; font-weight: 600; } /* Gold/Amber */
+.tajwid-ikhfa { color: #3b82f6; font-weight: 600; } /* Blue */
+.tajwid-idgham { color: #10b981; font-weight: 600; } /* Emerald */
+.tajwid-iqlab { color: #8b5cf6; font-weight: 600; } /* Purple */
+.tajwid-qalqalah { color: #ef4444; font-weight: 600; } /* Red */
+.tajwid-mad { color: #ec4899; font-weight: 600; } /* Pink */
+
+/* Tap targets, buttons and standard transitions */
+button, a {
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Skeleton Loading Shimmer */
+.shimmer-bg {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.03) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.03) 75%);
+  background-size: 200% 100%;
+}
+:global(.light-mode) .shimmer-bg {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.03) 25%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.03) 75%);
+  background-size: 200% 100%;
+}
+
+/* Premium Gold-Emerald Theme styles */
+.premium-gold-text {
+  background: linear-gradient(to right, #ffe58f 0%, #fbbf24 50%, #d97706 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 10px rgba(251, 191, 36, 0.1);
+}
+
+.premium-border {
+  border: 1px solid rgba(251, 191, 36, 0.25) !important;
+  box-shadow: 0 0 15px rgba(251, 191, 36, 0.08) !important;
+  background: linear-gradient(135deg, rgba(2, 44, 34, 0.6) 0%, rgba(20, 15, 5, 0.65) 100%) !important;
+}
+
+:global(html.light-mode) .premium-border {
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(217, 119, 6, 0.05) !important;
+  background: linear-gradient(135deg, rgba(209, 250, 229, 0.8) 0%, rgba(254, 243, 199, 0.8) 100%) !important;
+}
+
+.premium-badge-gold {
+  background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+  color: #000 !important;
+  text-shadow: 0 0.5px 0px rgba(255,255,255,0.4);
+  box-shadow: 0 2px 10px rgba(217, 119, 6, 0.3);
+}
+
+@keyframes gold-sparkle {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+.premium-sparkle {
+  animation: gold-sparkle 3s ease-in-out infinite;
+}
+
+/* Premium Theme Background and Geometric Patterns */
+.premium-theme {
+  background: radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 45%),
+              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.12) 0%, transparent 45%),
+              linear-gradient(135deg, #022018 0%, #030807 50%, #150f02 100%) !important;
+  position: relative;
+}
+
+.premium-theme::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.04;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z M30 10 L50 30 L30 50 L10 30 Z' fill='%23fbbf24' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-size: 60px 60px;
+}
+
+:global(html.light-mode) .premium-theme {
+  background: radial-gradient(circle at 10% 20%, rgba(251, 191, 36, 0.15) 0%, transparent 45%),
+              radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.18) 0%, transparent 45%),
+              linear-gradient(135deg, #f0fdf4 0%, #fffbeb 50%, #fef3c7 100%) !important;
+}
+
+:global(html.light-mode) .premium-theme::before {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z M30 10 L50 30 L30 50 L10 30 Z' fill='%23d97706' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E");
+}
+

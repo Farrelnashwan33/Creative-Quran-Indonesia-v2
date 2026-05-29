@@ -1,0 +1,225 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { fetchSurahs, type Surah } from '$lib/api';
+  import { Search, BookOpen, Compass, Bookmark, Clock, ArrowRight, Heart } from '@lucide/svelte';
+
+  let surahs = $state<Surah[]>([]);
+  let loading = $state(true);
+  let error = $state<string | null>(null);
+  let searchQuery = $state('');
+  let activeTab = $state<'surah' | 'juz'>('surah');
+
+  onMount(async () => {
+    try {
+      surahs = await fetchSurahs();
+    } catch (e) {
+      error = "Gagal memuat daftar Surah. Silakan periksa koneksi internet Anda.";
+    } finally {
+      loading = false;
+    }
+  });
+
+  // Filter surahs based on search query
+  let filteredSurahs = $derived(
+    surahs.filter(s => 
+      s.namaLatin.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.arti.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      s.nomor.toString() === searchQuery
+    )
+  );
+
+  // Group surahs into Juz
+  // In reality, Juz maps to specific verses of Surahs. 
+  // Let's create a standard mapping of 30 Juz to represent the Juz structure dynamically.
+  // Below is a standard mapping of Juz to start surah/ayah for reference.
+  const juzList = Array.from({ length: 30 }, (_, i) => {
+    const juzNum = i + 1;
+    // Basic Indonesian Juz names/description
+    const juzData: Record<number, { name: string, start: string }> = {
+      1: { name: 'Al-Fatihah', start: 'QS. Al-Fatihah: 1' },
+      2: { name: 'Al-Baqarah (Lanjutan)', start: 'QS. Al-Baqarah: 142' },
+      3: { name: 'Al-Baqarah (Lanjutan II)', start: 'QS. Al-Baqarah: 253' },
+      4: { name: 'Ali \'Imran', start: 'QS. Ali \'Imran: 93' },
+      5: { name: 'An-Nisa', start: 'QS. An-Nisa: 24' },
+      6: { name: 'An-Nisa (Lanjutan)', start: 'QS. An-Nisa: 148' },
+      7: { name: 'Al-Ma\'idah', start: 'QS. Al-Ma\'idah: 82' },
+      8: { name: 'Al-An\'am', start: 'QS. Al-An\'am: 111' },
+      9: { name: 'Al-A\'raf', start: 'QS. Al-A\'raf: 88' },
+      10: { name: 'Al-Anfal', start: 'QS. Al-Anfal: 41' },
+      11: { name: 'At-Taubah', start: 'QS. At-Taubah: 93' },
+      12: { name: 'Hud', start: 'QS. Hud: 6' },
+      13: { name: 'Yusuf', start: 'QS. Yusuf: 53' },
+      14: { name: 'Al-Hijr', start: 'QS. Al-Hijr: 1' },
+      15: { name: 'Al-Isra', start: 'QS. Al-Isra: 1' },
+      16: { name: 'Al-Kahf', start: 'QS. Al-Kahf: 75' },
+      17: { name: 'Al-Anbiya', start: 'QS. Al-Anbiya: 1' },
+      18: { name: 'Al-Mu\'minun', start: 'QS. Al-Mu\'minun: 1' },
+      19: { name: 'Al-Furqan', start: 'QS. Al-Furqan: 21' },
+      20: { name: 'An-Naml', start: 'QS. An-Naml: 56' },
+      21: { name: 'Al-\'Ankabut', start: 'QS. Al-\'Ankabut: 46' },
+      22: { name: 'Al-Ahzab', start: 'QS. Al-Ahzab: 31' },
+      23: { name: 'Ya-Sin', start: 'QS. Ya-Sin: 28' },
+      24: { name: 'Az-Zumar', start: 'QS. Az-Zumar: 32' },
+      25: { name: 'Fussilat', start: 'QS. Fussilat: 47' },
+      26: { name: 'Al-Ahqaf', start: 'QS. Al-Ahqaf: 1' },
+      27: { name: 'Adz-Dzariyat', start: 'QS. Adz-Dzariyat: 31' },
+      28: { name: 'Al-Mujadilah', start: 'QS. Al-Mujadilah: 1' },
+      29: { name: 'Al-Mulk', start: 'QS. Al-Mulk: 1' },
+      30: { name: 'An-Naba', start: 'QS. An-Naba: 1' }
+    };
+    return {
+      juz: juzNum,
+      name: `Juz ${juzNum}`,
+      description: juzData[juzNum]?.name || 'Detail Juz',
+      start: juzData[juzNum]?.start || 'Mulai Ayat'
+    };
+  });
+
+  // Helper mapping for Juz route redirection: redirect to the approximate starting surah
+  const juzRouteMap: Record<number, number> = {
+    1: 1, 2: 2, 3: 2, 4: 3, 5: 4, 6: 4, 7: 5, 8: 6, 9: 7, 10: 8,
+    11: 9, 12: 11, 13: 12, 14: 15, 15: 17, 16: 18, 17: 21, 18: 23, 19: 25, 20: 27,
+    21: 29, 22: 33, 23: 36, 24: 39, 25: 41, 26: 46, 27: 51, 28: 58, 29: 67, 30: 78
+  };
+</script>
+
+<div class="space-y-6">
+
+  <!-- PAGE HEADER & TABS -->
+  <div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div>
+      <h2 class="text-2xl font-extrabold text-white tracking-wide flex items-center gap-2">
+        <BookOpen class="w-6 h-6 text-emerald-400" />
+        Daftar Al-Qur'an
+      </h2>
+      <p class="text-xs text-zinc-500 font-semibold mt-1">Silahkan pilih Surah atau Juz yang ingin dibaca</p>
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="flex p-1 rounded-2xl glass border border-white/5 w-fit self-start md:self-auto">
+      <button 
+        onclick={() => activeTab = 'surah'} 
+        class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300
+          {activeTab === 'surah' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+      >
+        Daftar Surah
+      </button>
+      <button 
+        onclick={() => activeTab = 'juz'} 
+        class="px-5 py-2.5 rounded-xl text-xs font-bold transition-all duration-300
+          {activeTab === 'juz' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+      >
+        Daftar Juz
+      </button>
+    </div>
+  </div>
+
+  <!-- SEARCH BAR (Surah only) -->
+  {#if activeTab === 'surah'}
+    <div class="relative w-full">
+      <Search class="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+      <input 
+        type="text" 
+        bind:value={searchQuery}
+        placeholder="Cari nama surah, terjemahan, atau nomor surah..." 
+        class="w-full pl-12 pr-4 py-4 rounded-2xl glass border border-white/5 bg-transparent text-sm focus:outline-none focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 text-white transition-all placeholder:text-zinc-500"
+      />
+      {#if searchQuery}
+        <button 
+          onclick={() => searchQuery = ''} 
+          class="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-semibold text-zinc-500 hover:text-white"
+        >
+          Bersihkan
+        </button>
+      {/if}
+    </div>
+  {/if}
+
+  <!-- CONTENT CONTAINER -->
+  {#if loading}
+    <!-- Loading skeleton -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {#each Array(9) as _}
+        <div class="glass border border-white/5 rounded-2xl p-5 flex items-center justify-between animate-pulse">
+          <div class="flex items-center gap-4">
+            <div class="w-10 h-10 rounded-xl bg-white/5 shrink-0"></div>
+            <div class="space-y-2">
+              <div class="h-4 bg-white/5 rounded w-24"></div>
+              <div class="h-3 bg-white/5 rounded w-16"></div>
+            </div>
+          </div>
+          <div class="h-6 bg-white/5 rounded w-12"></div>
+        </div>
+      {/each}
+    </div>
+  {:else if error}
+    <!-- Error State -->
+    <div class="glass border border-white/5 rounded-2xl p-8 text-center max-w-md mx-auto space-y-4">
+      <p class="text-sm text-zinc-400 font-medium">{error}</p>
+      <button 
+        onclick={async () => { loading = true; error = null; surahs = await fetchSurahs().catch(e => { error = e.message; return []; }); loading = false; }} 
+        class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg"
+      >
+        Coba Lagi
+      </button>
+    </div>
+  {:else}
+    <!-- Lists -->
+    {#if activeTab === 'surah'}
+      <!-- SURAH GRID -->
+      {#if filteredSurahs.length === 0}
+        <div class="text-center py-12 text-zinc-500">
+          <p class="text-sm font-semibold">Surah "{searchQuery}" tidak ditemukan.</p>
+        </div>
+      {:else}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {#each filteredSurahs as surah}
+            <a 
+              href="/quran/{surah.nomor}" 
+              class="glass border border-white/5 p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 group transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/10 cursor-pointer"
+            >
+              <div class="flex items-center gap-4 min-w-0">
+                <!-- Surah index number container (hexagon lookalike or rounded) -->
+                <div class="w-10 h-10 rounded-xl bg-emerald-600/10 flex items-center justify-center font-bold text-xs text-emerald-400 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                  {surah.nomor}
+                </div>
+                <div class="min-w-0">
+                  <h3 class="font-bold text-zinc-200 truncate group-hover:text-emerald-400 transition-colors">{surah.namaLatin}</h3>
+                  <p class="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mt-0.5">{surah.tempatTurun} • {surah.jumlahAyat} Ayat</p>
+                </div>
+              </div>
+
+              <!-- Arabic text name -->
+              <div class="text-right shrink-0">
+                <span class="font-arabic-utsmani text-lg font-bold text-emerald-400 dark:text-emerald-500 block">{surah.nama}</span>
+                <span class="text-[10px] text-zinc-500 font-medium truncate max-w-[100px] block mt-0.5">{surah.arti}</span>
+              </div>
+            </a>
+          {/each}
+        </div>
+      {/if}
+    {:else}
+      <!-- JUZ GRID -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {#each juzList as item}
+          <a 
+            href="/quran/{juzRouteMap[item.juz]}" 
+            class="glass border border-white/5 p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 group transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/10 cursor-pointer"
+          >
+            <div class="flex items-center gap-4">
+              <div class="w-10 h-10 rounded-xl bg-emerald-600/10 flex items-center justify-center font-extrabold text-xs text-emerald-400 shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-all duration-300">
+                {item.juz}
+              </div>
+              <div>
+                <h3 class="font-bold text-zinc-200 group-hover:text-emerald-400 transition-colors">{item.name}</h3>
+                <p class="text-[10px] text-zinc-500 font-semibold uppercase tracking-wider mt-0.5">Mulai: {item.start}</p>
+              </div>
+            </div>
+            <ArrowRight class="w-4 h-4 text-zinc-600 group-hover:text-emerald-400 group-hover:translate-x-1 transition-all" />
+          </a>
+        {/each}
+      </div>
+    {/if}
+  {/if}
+
+</div>
