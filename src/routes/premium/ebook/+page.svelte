@@ -630,14 +630,6 @@
             <Sparkles class="w-4 h-4" />
             <span>3. Bank Contoh (30 Juz)</span>
           </button>
-          <button 
-            onclick={() => activeTab = 'video'}
-            class="px-4 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5
-              {activeTab === 'video' ? 'bg-amber-500 text-black shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
-          >
-            <Video class="w-4 h-4" />
-            <span>4. Video Pembelajaran</span>
-          </button>
         </div>
       </div>
     </div>
@@ -727,26 +719,7 @@
             </button>
           </div>
 
-          <!-- YouTube Video Guide Card -->
-          <div class="glass border border-amber-500/25 rounded-3xl p-5 bg-gradient-to-tr from-stone-950 via-amber-950/10 to-stone-950 space-y-4">
-            <h4 class="font-extrabold text-sm text-white flex items-center gap-2">
-              <Volume2 class="w-4.5 h-4.5 text-amber-400" />
-              Video Panduan Lengkap
-            </h4>
-            <div class="aspect-video rounded-2xl overflow-hidden border border-white/5 shadow-inner">
-              <iframe 
-                class="w-full h-full" 
-                src="https://www.youtube.com/embed/VykGlDdBIbk" 
-                title="Panduan Lengkap Makhorijul Huruf" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <p class="text-[10px] text-zinc-400 leading-relaxed font-semibold">
-              Simak penjelasan video visual tata cara melafalkan seluruh huruf hijaiyah dari para Qori ahli secara detail.
-            </p>
-          </div>
+
 
         </div>
       </div>
@@ -961,123 +934,6 @@
             </div>
           </div>
         {/if}
-      </div>
-    {:else if activeTab === 'video'}
-      <!-- 4. VIDEO PEMBELAJARAN -->
-      <div class="glass border border-white/5 rounded-3xl p-6 space-y-6">
-        <div class="border-b border-white/5 pb-4 text-left">
-          <h3 class="font-extrabold text-base text-white flex items-center gap-2">
-            <Video class="w-5 h-5 text-amber-400" />
-            Video Pembelajaran Makhorijul & Tajwid
-          </h3>
-          <p class="text-xs text-zinc-500 font-semibold mt-1">Pelajari cara membaca Al-Qur'an secara visual langsung dari penjelasan terperinci para ustadz dan qori melalui video berikut.</p>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 text-left">
-          <!-- Video 1: Makhorijul Huruf -->
-          <div class="glass border border-white/5 rounded-3xl p-5 bg-gradient-to-tr from-stone-950 via-amber-950/10 to-stone-950 space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-extrabold text-sm text-white flex items-center gap-2">
-                <Play class="w-4 h-4 text-amber-400 fill-amber-400" />
-                Panduan Lengkap Makhorijul Huruf
-              </h4>
-              <span class="text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md border border-amber-500/25 bg-amber-500/10 text-amber-400">
-                Makharaj
-              </span>
-            </div>
-            <div class="aspect-video rounded-2xl overflow-hidden border border-white/5 shadow-inner">
-              <iframe 
-                class="w-full h-full" 
-                src="https://www.youtube.com/embed/VykGlDdBIbk" 
-                title="Panduan Lengkap Makhorijul Huruf" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <p class="text-[11px] text-zinc-400 leading-relaxed font-semibold">
-              Video tutorial visual makhraj untuk melafalkan setiap huruf hijaiyah mulai dari Alif sampai Ya sesuai dengan tempat keluarnya huruf secara detail.
-            </p>
-          </div>
-
-          <!-- Video 2: Pengenalan Hukum Tajwid -->
-          <div class="glass border border-white/5 rounded-3xl p-5 bg-gradient-to-tr from-stone-950 via-emerald-950/10 to-stone-950 space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-extrabold text-sm text-white flex items-center gap-2">
-                <Play class="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                Dasar-Dasar Hukum Tajwid Lengkap
-              </h4>
-              <span class="text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md border border-emerald-500/25 bg-emerald-500/10 text-emerald-400">
-                Tajwid
-              </span>
-            </div>
-            <div class="aspect-video rounded-2xl overflow-hidden border border-white/5 shadow-inner">
-              <iframe 
-                class="w-full h-full" 
-                src="https://www.youtube.com/embed/iiKc380bj4Q" 
-                title="Dasar-Dasar Hukum Tajwid" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <p class="text-[11px] text-zinc-400 leading-relaxed font-semibold">
-              Kupas tuntas hukum tajwid dasar seperti hukum Nun Sukun & Tanwin, Mim Sukun, Qalqalah, hingga hukum Mad untuk menyempurnakan kualitas bacaan.
-            </p>
-          </div>
-
-          <!-- Video 3: Praktik Membaca & Penerapan -->
-          <div class="glass border border-white/5 rounded-3xl p-5 bg-gradient-to-tr from-stone-950 via-cyan-950/10 to-stone-950 space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-extrabold text-sm text-white flex items-center gap-2">
-                <Play class="w-4 h-4 text-cyan-400 fill-cyan-400" />
-                Praktik & Contoh Bacaan Tajwid
-              </h4>
-              <span class="text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md border border-cyan-500/25 bg-cyan-500/10 text-cyan-400">
-                Penerapan
-              </span>
-            </div>
-            <div class="aspect-video rounded-2xl overflow-hidden border border-white/5 shadow-inner">
-              <iframe 
-                class="w-full h-full" 
-                src="https://www.youtube.com/embed/VuCVkvDuwK8" 
-                title="Praktik Contoh Bacaan Tajwid" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <p class="text-[11px] text-zinc-400 leading-relaxed font-semibold">
-              Praktik langsung penerapan hukum tajwid yang benar pada ayat-ayat Al-Qur'an agar terhindar dari kekeliruan saat tadarus.
-            </p>
-          </div>
-
-          <!-- Video 4: Kesalahan Umum Tajwid & Makhraj -->
-          <div class="glass border border-white/5 rounded-3xl p-5 bg-gradient-to-tr from-stone-950 via-rose-950/10 to-stone-950 space-y-4">
-            <div class="flex items-center justify-between">
-              <h4 class="font-extrabold text-sm text-white flex items-center gap-2">
-                <Play class="w-4 h-4 text-rose-400 fill-rose-400" />
-                Kesalahan Umum Membaca Al-Qur'an
-              </h4>
-              <span class="text-[9px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-md border border-rose-500/25 bg-rose-500/10 text-rose-450">
-                Koreksi
-              </span>
-            </div>
-            <div class="aspect-video rounded-2xl overflow-hidden border border-white/5 shadow-inner">
-              <iframe 
-                class="w-full h-full" 
-                src="https://www.youtube.com/embed/iiKc380bj4Q" 
-                title="Kesalahan Umum Tajwid" 
-                frameborder="0" 
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                allowfullscreen
-              ></iframe>
-            </div>
-            <p class="text-[11px] text-zinc-400 leading-relaxed font-semibold">
-              Penjelasan mengenai beberapa kesalahan umum lafal makhraj dan panjang pendek harakat yang sering terjadi beserta solusinya.
-            </p>
-          </div>
-        </div>
       </div>
     {/if}
 
