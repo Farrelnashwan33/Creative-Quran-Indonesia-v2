@@ -236,3 +236,11 @@ html.light-mode .premium-theme::before {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Cpath d='M30 0 L60 30 L30 60 L0 30 Z M30 10 L50 30 L30 50 L10 30 Z' fill='%23d97706' fill-opacity='1' fill-rule='evenodd'/%3E%3C/svg%3E");
 }
 
+/* Responsive Desktop Sidebar Override */
+@media (max-width: 767px) {
+  .desktop-sidebar {
+    display: none !important;
+  }
+}
+
+
