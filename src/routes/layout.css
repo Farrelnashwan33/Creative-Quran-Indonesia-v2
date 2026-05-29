@@ -100,30 +100,30 @@ html.light-mode ::-webkit-scrollbar-thumb:hover {
 /* Glassmorphism Helpers */
 .glass {
   background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .light-mode .glass {
   background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(16, 185, 129, 0.08);
   box-shadow: 0 4px 30px rgba(0, 0, 0, 0.02);
 }
 
 .glass-emerald {
   background: linear-gradient(135deg, rgba(6, 78, 59, 0.2) 0%, rgba(2, 44, 34, 0.35) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(16, 185, 129, 0.15);
 }
 
 .light-mode .glass-emerald {
   background: linear-gradient(135deg, rgba(209, 250, 229, 0.7) 0%, rgba(240, 253, 244, 0.8) 100%);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(16, 185, 129, 0.2);
 }
 
