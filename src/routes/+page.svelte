@@ -18,12 +18,16 @@
     Lock
   } from '@lucide/svelte';
 
-  let currentLastRead = $state<LastRead | null>(null);
-  let favoritesCount = $state(0);
-  let historyCount = $state(0);
-  let stats = $state<ReadingStat[]>([]);
-  let locationInfo = $state({ lat: -6.2088, lon: 106.8456, city: 'Jakarta' });
-  let premiumActive = $state(false);
+  // Derived counts from stores
+  let favoritesCount = $derived($favorites.length);
+  let historyCount = $derived($readingHistory.length);
+  
+  // Location info derived from savedLocation store
+  let locationInfo = $derived(
+    $savedLocation 
+      ? { lat: $savedLocation.latitude, lon: $savedLocation.longitude, city: $savedLocation.cityName }
+      : { lat: -6.2088, lon: 106.8456, city: 'Jakarta' }
+  );
   
   let prayerData = $state<PrayerData | null>(null);
   let loadingPrayer = $state(true);
@@ -56,39 +60,25 @@
     greeting = getGreeting();
     dailyQuote = islamicQuotes[Math.floor(Math.random() * islamicQuotes.length)];
     
-    // Subscribe to stores
-    const subLastRead = lastRead.subscribe(lr => currentLastRead = lr);
-    const subFav = favorites.subscribe(fav => favoritesCount = fav.length);
-    const subHist = readingHistory.subscribe(hist => historyCount = hist.length);
-    const subStats = readingStats.subscribe(st => stats = st);
-    const subLoc = savedLocation.subscribe(loc => {
-      if (loc) {
-        locationInfo = { lat: loc.latitude, lon: loc.longitude, city: loc.cityName };
-      }
-    });
-    const subPremium = isPremium.subscribe(val => premiumActive = val);
-
     const stored = localStorage.getItem('quran_location');
     if (!stored) {
       autoDetectLocation();
-    } else {
-      loadPrayerTimes();
     }
 
     return () => {
-      subLastRead();
-      subFav();
-      subHist();
-      subStats();
-      subLoc();
-      subPremium();
       if (countdownTimer) clearInterval(countdownTimer);
     };
   });
 
+  // Load prayer times whenever locationInfo changes
+  $effect(() => {
+    if (locationInfo) {
+      loadPrayerTimes();
+    }
+  });
+
   async function autoDetectLocation() {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
-      loadPrayerTimes();
       return;
     }
     
@@ -113,12 +103,9 @@
           longitude: lon,
           cityName
         });
-        locationInfo = { lat, lon, city: cityName };
-        loadPrayerTimes();
       },
       (err) => {
         console.warn("Location permission not granted. Defaulting to Jakarta.", err);
-        loadPrayerTimes();
       }
     );
   }
@@ -214,7 +201,7 @@
       const d = new Date(today);
       d.setDate(today.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const match = stats.find(s => s.date === dateStr);
+      const match = $readingStats.find(s => s.date === dateStr);
       list.push({
         dayName: d.toLocaleDateString('id-ID', { weekday: 'short' }),
         count: match ? match.count : 0
@@ -232,13 +219,13 @@
   <!-- HERO GREETING & MOTIVATIONAL BANNER -->
   <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
     <div class="lg:col-span-2 relative overflow-hidden rounded-3xl p-6 lg:p-8 flex flex-col justify-between min-h-[220px] transition-all duration-300
-      {premiumActive 
+      {$isPremium 
         ? 'bg-gradient-to-tr from-emerald-950 via-amber-950 to-stone-950 border border-amber-500/35 shadow-amber-950/20' 
         : 'bg-gradient-to-tr from-emerald-900 via-emerald-800 to-emerald-950 border border-emerald-500/20 shadow-emerald-900/10'} shadow-xl group">
       <!-- Islamic background pattern overlay -->
       <div class="absolute inset-0 opacity-10 bg-repeat bg-[size:30px] pointer-events-none islamic-bg"></div>
       
-      {#if premiumActive}
+      {#if $isPremium}
         <!-- Golden particles/sparkles layout -->
         <div class="absolute inset-0 pointer-events-none opacity-20 flex justify-around items-center">
           <div class="w-1.5 h-1.5 rounded-full bg-amber-400 premium-sparkle"></div>
@@ -249,10 +236,10 @@
       
       <div class="relative z-10 space-y-2">
         <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold
-          {premiumActive 
+          {$isPremium 
             ? 'bg-amber-500/10 border border-amber-400/30 text-amber-400' 
             : 'bg-emerald-500/10 border border-emerald-400/20 text-emerald-400'}">
-          {#if premiumActive}
+          {#if $isPremium}
             <Crown class="w-3.5 h-3.5 fill-amber-400" />
             <span>Creative Qur'an Premium</span>
           {:else}
@@ -264,7 +251,7 @@
         <p class="text-zinc-300 text-sm max-w-lg leading-relaxed mt-2 font-medium">
           "{dailyQuote.text}"
         </p>
-        <span class="block text-xs font-semibold mt-1 {premiumActive ? 'text-amber-400' : 'text-emerald-400'}">{dailyQuote.surah}</span>
+        <span class="block text-xs font-semibold mt-1 {$isPremium ? 'text-amber-400' : 'text-emerald-400'}">{dailyQuote.surah}</span>
       </div>
 
       <!-- Quick Stats overview -->
@@ -279,21 +266,21 @@
         </div>
         <div>
           <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider block">Target Khatam</span>
-          <span class="text-lg font-extrabold mt-0.5 block {premiumActive ? 'text-amber-400' : 'text-emerald-400'}">100% <span class="text-xs text-zinc-400 font-normal">Progress</span></span>
+          <span class="text-lg font-extrabold mt-0.5 block {$isPremium ? 'text-amber-400' : 'text-emerald-400'}">100% <span class="text-xs text-zinc-400 font-normal">Progress</span></span>
         </div>
       </div>
     </div>
 
     <!-- PRAYER TIME COUNTDOWN CARD -->
     <div class="rounded-3xl p-6 glass flex flex-col justify-between min-h-[220px] relative overflow-hidden group shadow-lg transition-all duration-300
-      {premiumActive ? 'premium-border' : 'border border-white/5'}">
+      {$isPremium ? 'premium-border' : 'border border-white/5'}">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
-          <Clock class="w-5 h-5 animate-pulse-slow {premiumActive ? 'text-amber-400' : 'text-emerald-400'}" />
+          <Clock class="w-5 h-5 animate-pulse-slow {$isPremium ? 'text-amber-400' : 'text-emerald-400'}" />
           <h3 class="font-bold text-sm text-zinc-300">Waktu Sholat</h3>
         </div>
         <div class="flex items-center gap-1 text-xs font-semibold px-2 py-0.5 rounded-full
-          {premiumActive ? 'text-amber-400 bg-amber-500/10' : 'text-emerald-400 bg-emerald-500/10'}">
+          {$isPremium ? 'text-amber-400 bg-amber-500/10' : 'text-emerald-400 bg-emerald-500/10'}">
           <MapPin class="w-3.5 h-3.5" />
           <span>{locationInfo.city}</span>
         </div>
@@ -314,8 +301,8 @@
 
       <div class="flex gap-2">
         <a href="/sholat" class="flex-1 inline-flex items-center justify-center gap-2 active:scale-95 text-white font-bold text-xs py-3.5 rounded-2xl shadow-lg transition-all
-          {premiumActive 
-            ? 'bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/20' 
+          {$isPremium 
+            ? 'bg-amber-505 bg-amber-500 hover:bg-amber-400 text-black shadow-amber-950/20' 
             : 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-950/20'}">
           <Compass class="w-4 h-4" />
           <span>Jadwal & Arah Kiblat</span>
@@ -326,17 +313,17 @@
 
   <!-- PREMIUM E-BOOK PROMO / QUICK ENTRY -->
   <section class="rounded-3xl p-5.5 glass border transition-all duration-300 flex flex-col md:flex-row items-center justify-between gap-4 shadow-md
-    {premiumActive 
+    {$isPremium 
       ? 'border-amber-500/25 bg-gradient-to-r from-emerald-950/40 to-amber-950/30' 
       : 'border-white/5 bg-white/[0.01]'}"
   >
     <div class="flex items-center gap-4 text-left">
       <div class="w-12 h-12 rounded-xl flex items-center justify-center shrink-0
-        {premiumActive 
+        {$isPremium 
           ? 'bg-amber-500/10 text-amber-400' 
           : 'bg-zinc-800 text-zinc-500'}"
       >
-        {#if premiumActive}
+        {#if $isPremium}
           <Crown class="w-6 h-6 fill-amber-400" />
         {:else}
           <Lock class="w-5 h-5 text-zinc-500" />
@@ -351,7 +338,7 @@
       </div>
     </div>
     <div class="w-full md:w-auto shrink-0">
-      {#if premiumActive}
+      {#if $isPremium}
         <a 
           href="/premium/ebook" 
           class="w-full md:w-auto inline-flex items-center justify-center gap-1.5 bg-gradient-to-r from-amber-500 to-yellow-300 text-black font-black text-xs px-5 py-3 rounded-xl active:scale-95 shadow-md transition-all"
@@ -428,14 +415,14 @@
           <span class="text-xs font-semibold text-emerald-400">PWA Offline</span>
         </div>
         
-        {#if currentLastRead}
+        {#if $lastRead}
           <div class="py-6 flex items-center justify-between">
             <div class="space-y-1">
-              <h4 class="text-xl font-extrabold text-white">{currentLastRead.surahName}</h4>
-              <p class="text-xs text-zinc-400 font-medium">Surah ke-{currentLastRead.surahNumber} • {currentLastRead.surahTranslation}</p>
+              <h4 class="text-xl font-extrabold text-white">{$lastRead.surahName}</h4>
+              <p class="text-xs text-zinc-400 font-medium">Surah ke-{$lastRead.surahNumber} • {$lastRead.surahTranslation}</p>
               <div class="inline-flex items-center gap-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold mt-3">
                 <Check class="w-3.5 h-3.5" />
-                <span>Ayat Ke-{currentLastRead.ayahNumber}</span>
+                <span>Ayat Ke-{$lastRead.ayahNumber}</span>
               </div>
             </div>
             
@@ -453,10 +440,10 @@
       </div>
 
       <a 
-        href={currentLastRead ? `/quran/${currentLastRead.surahNumber}` : '/quran'}
+        href={$lastRead ? `/quran/${$lastRead.surahNumber}` : '/quran'}
         class="w-full inline-flex items-center justify-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 active:scale-95 font-bold text-xs py-3.5 rounded-2xl"
       >
-        <span>{currentLastRead ? 'Lanjutkan Membaca' : 'Mulai Membaca'}</span>
+        <span>{$lastRead ? 'Lanjutkan Membaca' : 'Mulai Membaca'}</span>
         <ArrowRight class="w-4 h-4" />
       </a>
     </div>
@@ -471,7 +458,7 @@
 
         <!-- Mini graphic bar chart -->
         <div class="flex items-end justify-between h-40 pt-6 px-2">
-          {#each weeklyStats as item}
+          {#each weeklyStats as item (item.dayName)}
             {@const heightPercent = Math.min(100, Math.max(10, (item.count / maxStatVal) * 100))}
             <div class="flex flex-col items-center gap-2 w-10">
               <span class="text-[9px] font-bold text-emerald-400">{item.count > 0 ? `${item.count}a` : ''}</span>

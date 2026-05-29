@@ -139,7 +139,7 @@
   {#if loading}
     <!-- Loading skeleton -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {#each Array(9) as _}
+      {#each Array(9) as _, i (i)}
         <div class="glass border border-white/5 rounded-2xl p-5 flex items-center justify-between animate-pulse">
           <div class="flex items-center gap-4">
             <div class="w-10 h-10 rounded-xl bg-white/5 shrink-0"></div>
@@ -173,7 +173,7 @@
         </div>
       {:else}
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {#each filteredSurahs as surah}
+          {#each filteredSurahs as surah (surah.nomor)}
             <a 
               href="/quran/{surah.nomor}" 
               class="glass border border-white/5 p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 group transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/10 cursor-pointer"
@@ -201,7 +201,7 @@
     {:else}
       <!-- JUZ GRID -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {#each juzList as item}
+        {#each juzList as item (item.juz)}
           <a 
             href="/quran/{juzRouteMap[item.juz]}" 
             class="glass border border-white/5 p-5 rounded-2xl flex items-center justify-between hover:border-emerald-500/20 group transition-all duration-300 hover:shadow-lg hover:shadow-emerald-950/10 cursor-pointer"

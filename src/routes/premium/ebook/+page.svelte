@@ -20,7 +20,6 @@
     Play
   } from '@lucide/svelte';
 
-  let premiumActive = $state(false);
   let activeTab = $state<'makhraj' | 'tajwid' | 'explorer' | 'video'>('makhraj');
   let selectedLetter = $state<string>('Alif');
   let activeTajwidSection = $state<string>('nun-sukun');
@@ -33,22 +32,12 @@
   let scannerLoading = $state(false);
   let scannedExamples = $state<{ ayahNum: number; textArab: string; textLatin: string; translation: string; highlighted: string }[]>([]);
 
-  onMount(() => {
-    const unsub = isPremium.subscribe(val => {
-      premiumActive = val;
-    });
-
-    async function init() {
-      try {
-        surahList = await fetchSurahs();
-        scanSurah();
-      } catch (e) {
-        console.error(e);
-      }
+  onMount(async () => {
+    try {
+      surahList = await fetchSurahs();
+    } catch (e) {
+      console.error(e);
     }
-    init();
-    
-    return unsub;
   });
 
   async function scanSurah() {
@@ -101,8 +90,9 @@
     }
   }
 
+  // Unified effect triggers scan only when surahList and dependencies are ready, avoiding duplicate calls
   $effect(() => {
-    if (selectedSurah && selectedRule) {
+    if (surahList.length > 0 && selectedSurah && selectedRule) {
       scanSurah();
     }
   });
@@ -226,7 +216,7 @@
     makhrajLetters.find(l => l.letter === selectedLetter) || makhrajLetters[0]
   );
 
-  // Play pronunciation sound using native browser Web Speech API (CORS-free, instant)
+  // Play pronunciation sound using native browser Web Speech API
   let isPlaying = $state(false);
 
   function playLetterSound(arabicChar: string) {
@@ -234,12 +224,11 @@
     isPlaying = true;
     
     try {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
       
       const utterance = new SpeechSynthesisUtterance(arabicChar);
-      utterance.lang = 'ar-SA'; // Arabic (Saudi Arabia)
-      utterance.rate = 0.55;    // Slow rate for clear learning pronunciation
+      utterance.lang = 'ar-SA';
+      utterance.rate = 0.55;
       
       utterance.onend = () => {
         isPlaying = false;
@@ -279,7 +268,7 @@
       {
         title: 'Idgham Bighunnah',
         subtitle: 'Dibaca Melebur dengan Mendengung',
-        description: 'Bila Nun Sukun (نْ) atau Tanwin bertemu dengan huruf (ي, ن, م, و). Suara nun/tanwin dimasukkan ke huruf berikutnya disertai dengung 2-3 harakat.',
+        description: 'Bila Nun Sukun (نْ) atau Tanwin bertemu dengan huruf (ي, ن, م, و). Suara nun/tanwin dimasukkan to huruf berikutnya disertai dengung 2-3 harakat.',
         colorClass: 'border-amber-500 bg-amber-500/5 text-amber-400',
         examples: [
           { arabic: 'مَنْ يَقُولُ', latin: 'May yaquulu', rule: 'Nun Sukun bertemu Ya' },
@@ -293,7 +282,7 @@
         colorClass: 'border-purple-500 bg-purple-500/5 text-purple-400',
         examples: [
           { arabic: 'مِنْ بَعْدِ', latin: 'Mim ba\'di', rule: 'Nun Sukun bertemu Ba' },
-          { arabic: 'سَمِيعٌ بَصِيرٌ', latin: 'Samii\'um bashiir', rule: 'Tanwin bertemu Ba' }
+          { arabic: 'سَمِيعٌ بَصِIR', latin: 'Samii\'um bashiir', rule: 'Tanwin bertemu Ba' }
         ]
       },
       {
@@ -431,7 +420,7 @@
         colorClass: 'border-cyan-500 bg-cyan-500/5 text-cyan-400',
         examples: [
           { arabic: 'الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ', latin: 'Al-\'aalamiin', rule: 'Mad asli bertemu huruf hidup dibaca waqaf' },
-          { arabic: 'مَالِكِ يَوْمِ الدِّينِ', latin: 'Ad-diin', rule: 'Mad asli bertemu huruf hidup dibaca waqaf' }
+          { arabic: 'مَالِكِ يَوْMِ الدِّينِ', latin: 'Ad-diin', rule: 'Mad asli bertemu huruf hidup dibaca waqaf' }
         ]
       },
       {
@@ -441,7 +430,7 @@
         colorClass: 'border-yellow-400 bg-yellow-400/5 text-yellow-350',
         examples: [
           { arabic: 'قُرَيْشٍ', latin: 'Quraisy(i)', rule: 'Ya sukun didahului fathah dibaca waqaf' },
-          { arabic: 'لِإِيلَافِ قُرَيْشٍ إِيلَافِهِمْ رِحْلَةَ الشِّتَاءِ وَالصَّيْفِ', latin: 'Wash-shaif(i)', rule: 'Ya sukun didahului fathah dibaca waqaf' }
+          { arabic: 'لِإِيلَافِ قُرَيْشٍ إِILAAFIM', latin: 'Wash-shaif(i)', rule: 'Ya sukun didahului fathah dibaca waqaf' }
         ]
       },
       {
@@ -459,7 +448,7 @@
       {
         title: 'Alif Lam Qamariyah',
         subtitle: 'Dibaca Jelas (Izhar)',
-        description: 'Apabila Alif Lam (ال) bertemu dengan salah satu dari 14 huruf Qamariyah (ا ب غ ح ج ك و خ ف ع ق ي م هـ). Alif lam dibaca jelas dan tegas.',
+        description: 'Apabila Alif Lam (ال) bertemu dengan salah satu dari 14 huruf Qamariyah (ا b g h j k w kh f \' q y m h). Alif lam dibaca jelas dan tegas.',
         colorClass: 'border-teal-500 bg-teal-500/5 text-teal-400',
         examples: [
           { arabic: 'الْحَمْدُ', latin: 'Al-hamdu', rule: 'Alif Lam bertemu Ha' },
@@ -511,7 +500,7 @@
   };
 </script>
 
-{#if !premiumActive}
+{#if !$isPremium}
   <!-- LOCK SCREEN FOR NON-PREMIUM -->
   <div class="min-h-[80vh] flex items-center justify-center px-4">
     <div class="glass border border-amber-500/30 p-8 rounded-3xl text-center max-w-md w-full space-y-6 shadow-2xl relative overflow-hidden premium-theme">
@@ -647,13 +636,14 @@
           </div>
 
           <div class="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-3.5">
-            {#each makhrajLetters as l}
+            {#each makhrajLetters as l (l.letter)}
+              <!-- Changed from nested glass to solid transparent buttons to prevent ghost layer blur bugs -->
               <button 
                 onclick={() => selectedLetter = l.letter}
-                class="aspect-square glass border rounded-2xl p-3 flex flex-col justify-between items-center transition-all duration-300 active:scale-95 text-center
+                class="aspect-square bg-white/5 border rounded-2xl p-3 flex flex-col justify-between items-center transition-all duration-300 active:scale-95 text-center
                   {selectedLetter === l.letter 
                     ? 'border-amber-500/50 bg-amber-500/10 text-amber-400' 
-                    : 'border-white/5 hover:border-white/10 hover:bg-white/[0.01] text-zinc-400'}"
+                    : 'border-white/10 hover:border-white/20 hover:bg-white/10 text-zinc-400'}"
               >
                 <span class="text-3xl font-arabic-utsmani font-bold">{l.arabic}</span>
                 <div class="space-y-0.5">
@@ -718,8 +708,6 @@
               {/if}
             </button>
           </div>
-
-
 
         </div>
       </div>
@@ -812,8 +800,8 @@
         <!-- Right Content Details -->
         <div class="lg:col-span-3 space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {#each tajwidData[activeTajwidSection] || [] as rule}
-              <div class="glass border rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-white/10 transition-all">
+            {#each tajwidData[activeTajwidSection] || [] as rule (rule.title)}
+              <div class="glass border border-white/5 rounded-3xl p-6 flex flex-col justify-between space-y-4 hover:border-white/10 transition-all">
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
                     <h4 class="font-extrabold text-sm text-white">{rule.title}</h4>
@@ -830,7 +818,7 @@
                 <div class="space-y-2 border-t border-white/5 pt-4">
                   <span class="text-[9px] text-zinc-500 font-bold uppercase tracking-wider block">Contoh Ayat & Hukum</span>
                   <div class="grid grid-cols-1 gap-2">
-                    {#each rule.examples as ex}
+                    {#each rule.examples as ex, i (ex.arabic + '-' + i)}
                       <div class="flex items-center justify-between p-2.5 rounded-xl bg-white/[0.01] border border-white/5">
                         <div class="text-left">
                           <span class="text-xs text-zinc-200 font-bold block">{ex.latin}</span>
@@ -868,7 +856,7 @@
                 bind:value={selectedSurah}
                 class="py-2 px-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-amber-500 bg-zinc-950"
               >
-                {#each surahList as s}
+                {#each surahList as s (s.nomor)}
                   <option value={s.nomor} class="bg-zinc-950 text-white">{s.nomor}. {s.namaLatin} ({s.jumlahAyat} Ayat)</option>
                 {/each}
               </select>
@@ -910,8 +898,9 @@
 
             <!-- List scrollable -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[50vh] overflow-y-auto pr-2 scrollbar-thin">
-              {#each scannedExamples as ex}
-                <div class="glass border border-white/5 rounded-2xl p-4.5 space-y-3 relative hover:border-amber-500/20 transition-all text-left">
+              {#each scannedExamples as ex (ex.ayahNum)}
+                <!-- Removed .glass class to prevent nested glassmorphism rendering ghost layers -->
+                <div class="bg-white/5 border border-white/10 rounded-2xl p-4.5 space-y-3 relative hover:border-amber-500/20 hover:bg-white/10 transition-all text-left">
                   <div class="flex items-center justify-between pb-2 border-b border-white/5">
                     <span class="text-[9px] text-zinc-500 font-bold">Ayat {ex.ayahNum}</span>
                     <span class="text-[9px] text-amber-400 font-extrabold uppercase tracking-wider bg-amber-500/10 px-2 py-0.5 rounded border border-amber-500/25">Hukum Cocok</span>

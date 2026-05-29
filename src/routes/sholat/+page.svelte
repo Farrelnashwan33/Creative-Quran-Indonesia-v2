@@ -29,34 +29,24 @@
   let qiblaAngle = $state(0);
   let supportsCompass = $state(false);
 
-  // Active alarms / adzan notifications
-  let alarmsVal = $state<AlarmSettings>({
-    Fajr: true,
-    Dhuhr: true,
-    Asr: true,
-    Maghrib: true,
-    Isha: true
+  // Reactive dependency on savedLocation to update local coordinates
+  $effect(() => {
+    if ($savedLocation) {
+      latitude = $savedLocation.latitude;
+      longitude = $savedLocation.longitude;
+      city = $savedLocation.cityName;
+      loadData();
+    }
   });
 
   onMount(() => {
-    // Retrieve cached location
-    const stored = localStorage.getItem('quran_location');
-    if (stored) {
-      const loc = JSON.parse(stored);
-      latitude = loc.latitude;
-      longitude = loc.longitude;
-      city = loc.cityName;
+    // If savedLocation is not set, load default data
+    if (!$savedLocation) {
+      loadData();
     }
-
-    const unsubAlarms = activeAlarms.subscribe(val => {
-      alarmsVal = val;
-    });
-
-    loadData();
     setupCompass();
 
     return () => {
-      unsubAlarms();
       if (typeof window !== 'undefined') {
         window.removeEventListener('deviceorientation', handleOrientation);
       }
@@ -113,8 +103,6 @@
            longitude,
            cityName: city
          });
-
-         loadData();
       },
       (err) => {
          error = "Tidak dapat mengakses lokasi GPS. Menggunakan lokasi default (Jakarta).";
@@ -218,7 +206,7 @@
         <div class="glass border border-white/5 rounded-3xl p-6 space-y-4 animate-pulse">
           <div class="h-6 bg-white/5 rounded w-1/3"></div>
           <div class="space-y-3">
-            {#each Array(6) as _}
+            {#each Array(6) as _, i (i)}
               <div class="h-12 bg-white/5 rounded-xl"></div>
             {/each}
           </div>
@@ -250,7 +238,7 @@
 
         <!-- PRAYER ROWS -->
         <div class="glass border border-white/5 rounded-3xl overflow-hidden divide-y divide-white/5">
-          {#each prayers as prayer}
+          {#each prayers as prayer (prayer.key)}
             {@const time = prayerData.timings[prayer.key as keyof typeof prayerData.timings]}
             <div class="flex items-center justify-between p-4.5 hover:bg-white/[0.01] transition-colors">
               <div class="flex items-center gap-3">
@@ -265,12 +253,12 @@
                   <button 
                     onclick={() => toggleAlarm(prayer.key)}
                     class="p-2 rounded-xl transition-all duration-300
-                      {alarmsVal[prayer.key as keyof AlarmSettings] 
+                      {$activeAlarms[prayer.key as keyof AlarmSettings] 
                         ? 'text-emerald-400 bg-emerald-500/10' 
                         : 'text-zinc-600 hover:text-zinc-400'}"
                     title="Nyalakan Notifikasi Adzan"
                   >
-                    {#if alarmsVal[prayer.key as keyof AlarmSettings]}
+                    {#if $activeAlarms[prayer.key as keyof AlarmSettings]}
                       <Bell class="w-4 h-4" />
                     {:else}
                       <BellOff class="w-4 h-4" />

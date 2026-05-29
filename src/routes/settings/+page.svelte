@@ -22,14 +22,8 @@
     Crown
   } from '@lucide/svelte';
 
-  let currentSettings = $state<AppSettings>({ ...defaultSettings });
   let wakeLockActive = $state(false);
   let wakeLock: any = null;
-  let adzanVoiceVal = $state('makkah');
-  let currentLastRead = $state<LastRead | null>(null);
-  let premiumActive = $state(false);
-  let adminActive = $state(false);
-  let emailInput = $state('');
 
   const ALLOWED_ADMIN_EMAILS = [
     'yadiiitea73@gmail.com',
@@ -37,42 +31,7 @@
     'r9n9harmadi@gmail.com'
   ];
 
-  function handleEmailInput() {
-    userEmail.set(emailInput || '');
-    const cleanEmail = (emailInput || '').trim().toLowerCase();
-    if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
-      if (adminActive) {
-        isAdmin.set(false);
-      }
-    }
-  }
-
   onMount(() => {
-    const unsub = settings.subscribe(s => {
-      currentSettings = { ...s };
-    });
-    const unsubAdzan = adzanVoice.subscribe(val => {
-      adzanVoiceVal = val;
-    });
-    const unsubLastRead = lastRead.subscribe(lr => {
-      currentLastRead = lr;
-    });
-    const unsubPremium = isPremium.subscribe(val => {
-      premiumActive = val;
-    });
-    const unsubAdmin = isAdmin.subscribe(val => {
-      adminActive = val;
-    });
-    const unsubEmail = userEmail.subscribe(val => {
-      emailInput = val || '';
-      const cleanEmail = emailInput.trim().toLowerCase();
-      if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
-        if (adminActive) {
-          isAdmin.set(false);
-        }
-      }
-    });
-
     const handleFullscreenChange = () => {
       updateSetting('fullscreen', !!document.fullscreenElement);
     };
@@ -82,30 +41,33 @@
     }
 
     return () => {
-      unsub();
-      unsubAdzan();
-      unsubLastRead();
-      unsubPremium();
-      unsubAdmin();
-      unsubEmail();
       if (typeof document !== 'undefined') {
         document.removeEventListener('fullscreenchange', handleFullscreenChange);
       }
     };
   });
 
+  // Sync mode admin automatically when $userEmail changes
+  $effect(() => {
+    const cleanEmail = ($userEmail || '').trim().toLowerCase();
+    if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
+      if ($isAdmin) {
+        $isAdmin = false;
+      }
+    }
+  });
+
   function handleActivatePremium() {
-    if (adminActive) {
-      isPremium.set(true);
+    if ($isAdmin) {
+      $isPremium = true;
       triggerToast("Selamat! Royal Gold Premium Berhasil Diaktifkan.");
     } else {
-      showPremiumPaymentModal.set(true);
+      $showPremiumPaymentModal = true;
     }
   }
 
   function updateSetting<K extends keyof AppSettings>(key: K, value: AppSettings[K]) {
-    currentSettings[key] = value;
-    settings.set(currentSettings);
+    $settings[key] = value;
     
     // Side effect for theme changes
     if (key === 'theme') {
@@ -130,9 +92,8 @@
   }
 
   function resetSettings() {
-    currentSettings = { ...defaultSettings };
-    settings.set(currentSettings);
-    applyTheme(currentSettings.theme);
+    $settings = { ...defaultSettings };
+    applyTheme($settings.theme);
   }
 
   // Fullscreen support
@@ -157,7 +118,7 @@
     }
 
     try {
-      if (!currentSettings.keepScreenOn) {
+      if (!$settings.keepScreenOn) {
         wakeLock = await (navigator as any).wakeLock.request('screen');
         updateSetting('keepScreenOn', true);
         triggerToast("Layar akan tetap aktif saat membaca!");
@@ -238,8 +199,8 @@
 
     <div class="flex items-center gap-2">
       <a 
-        href={currentLastRead ? `/quran/${currentLastRead.surahNumber}` : '/quran'}
-        class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg shadow-emerald-950/20 active:scale-95 transition-all"
+        href={$lastRead ? `/quran/${$lastRead.surahNumber}` : '/quran'}
+        class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white shadow-lg shadow-emerald-950/20 active:scale-95 transition-all"
       >
         <ArrowLeft class="w-4 h-4" />
         <span>Kembali ke Qur'an</span>
@@ -270,18 +231,19 @@
         <!-- Font Script -->
         <div class="flex flex-col gap-2">
           <span class="text-xs text-zinc-500 font-semibold">Jenis Penulisan Arab</span>
-          <div class="flex p-1 rounded-xl glass border border-white/5 w-full">
+          <!-- Changed from glass to solid transparent style to prevent nested blur ghosting -->
+          <div class="flex p-1 rounded-xl bg-black/25 border border-white/5 w-full">
             <button 
               onclick={() => updateSetting('arabicScript', 'utsmani')}
               class="flex-1 py-2 rounded-lg text-xs font-bold transition-all
-                {currentSettings.arabicScript === 'utsmani' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+                {$settings.arabicScript === 'utsmani' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
             >
               Utsmani (Madinah)
             </button>
             <button 
               onclick={() => updateSetting('arabicScript', 'indopak')}
               class="flex-1 py-2 rounded-lg text-xs font-bold transition-all
-                {currentSettings.arabicScript === 'indopak' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+                {$settings.arabicScript === 'indopak' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
             >
               IndoPak (Asia)
             </button>
@@ -292,13 +254,13 @@
         <div class="flex flex-col gap-2 pt-2">
           <div class="flex items-center justify-between text-xs font-bold text-zinc-400">
             <span>Ukuran Font Arab</span>
-            <span class="text-emerald-400">{currentSettings.arabicFontSize}px</span>
+            <span class="text-emerald-400">{$settings.arabicFontSize}px</span>
           </div>
           <input 
             type="range" 
             min="24" 
             max="48" 
-            value={currentSettings.arabicFontSize} 
+            value={$settings.arabicFontSize} 
             oninput={(e) => updateSetting('arabicFontSize', Number((e.target as HTMLInputElement).value))}
             class="w-full h-1.5 bg-emerald-500/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
           />
@@ -311,12 +273,12 @@
             <p class="text-[10px] text-zinc-500 font-semibold mt-0.5">Aktifkan warna panduan hukum tajwid</p>
           </div>
           <button 
-            onclick={() => updateSetting('tajwidColored', !currentSettings.tajwidColored)}
+            onclick={() => updateSetting('tajwidColored', !$settings.tajwidColored)}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.tajwidColored ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.tajwidColored ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Tajwid Berwarna"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.tajwidColored ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.tajwidColored ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
 
@@ -327,12 +289,12 @@
             <p class="text-[10px] text-zinc-500 font-semibold mt-0.5">Tampilkan nomor di dalam baris ayat</p>
           </div>
           <button 
-            onclick={() => updateSetting('arabicNumberVisible', !currentSettings.arabicNumberVisible)}
+            onclick={() => updateSetting('arabicNumberVisible', !$settings.arabicNumberVisible)}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.arabicNumberVisible ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.arabicNumberVisible ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Nomor Ayat Arab"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.arabicNumberVisible ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.arabicNumberVisible ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
 
@@ -352,27 +314,27 @@
             <p class="text-[10px] text-zinc-500 font-semibold mt-0.5">Tampilkan teks latin ejaan bacaan</p>
           </div>
           <button 
-            onclick={() => updateSetting('latinEnabled', !currentSettings.latinEnabled)}
+            onclick={() => updateSetting('latinEnabled', !$settings.latinEnabled)}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.latinEnabled ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.latinEnabled ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Transliterasi Latin"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.latinEnabled ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.latinEnabled ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
 
         <!-- Latin Size -->
-        {#if currentSettings.latinEnabled}
+        {#if $settings.latinEnabled}
           <div class="flex flex-col gap-2 pt-1 pb-2">
             <div class="flex items-center justify-between text-xs font-bold text-zinc-400">
               <span>Ukuran Font Latin</span>
-              <span class="text-emerald-400">{currentSettings.latinFontSize}px</span>
+              <span class="text-emerald-400">{$settings.latinFontSize}px</span>
             </div>
             <input 
               type="range" 
               min="12" 
               max="24" 
-              value={currentSettings.latinFontSize} 
+              value={$settings.latinFontSize} 
               oninput={(e) => updateSetting('latinFontSize', Number((e.target as HTMLInputElement).value))}
               class="w-full h-1.5 bg-emerald-500/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
             />
@@ -386,27 +348,27 @@
             <p class="text-[10px] text-zinc-500 font-semibold mt-0.5">Tampilkan makna terjemahan Kemenag RI</p>
           </div>
           <button 
-            onclick={() => updateSetting('translationEnabled', !currentSettings.translationEnabled)}
+            onclick={() => updateSetting('translationEnabled', !$settings.translationEnabled)}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.translationEnabled ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.translationEnabled ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Terjemahan Indonesia"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.translationEnabled ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.translationEnabled ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
 
         <!-- Translation Size -->
-        {#if currentSettings.translationEnabled}
+        {#if $settings.translationEnabled}
           <div class="flex flex-col gap-2 pt-2">
             <div class="flex items-center justify-between text-xs font-bold text-zinc-400">
               <span>Ukuran Font Terjemahan</span>
-              <span class="text-emerald-400">{currentSettings.translationFontSize}px</span>
+              <span class="text-emerald-400">{$settings.translationFontSize}px</span>
             </div>
             <input 
               type="range" 
               min="12" 
               max="24" 
-              value={currentSettings.translationFontSize} 
+              value={$settings.translationFontSize} 
               oninput={(e) => updateSetting('translationFontSize', Number((e.target as HTMLInputElement).value))}
               class="w-full h-1.5 bg-emerald-500/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
             />
@@ -430,16 +392,17 @@
         <div class="flex flex-col gap-2">
           <span class="text-xs text-zinc-500 font-semibold">Qori Utama</span>
           <div class="grid grid-cols-1 gap-2">
-            {#each qoris as qori}
+            {#each qoris as qori (qori.id)}
+              <!-- Removed .glass class to prevent nested glassmorphism layers -->
               <button 
                 onclick={() => updateSetting('qori', qori.id as any)}
                 class="flex items-center justify-between p-3.5 rounded-xl border transition-all text-left text-xs font-bold
-                  {currentSettings.qori === qori.id 
+                  {$settings.qori === qori.id 
                     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' 
-                    : 'border-white/5 glass text-zinc-400 hover:text-zinc-200'}"
+                    : 'border-white/5 bg-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/10'}"
               >
                 <span>{qori.name}</span>
-                {#if currentSettings.qori === qori.id}
+                {#if $settings.qori === qori.id}
                   <Check class="w-4 h-4 text-emerald-400" />
                 {/if}
               </button>
@@ -463,16 +426,17 @@
               { id: 'madinah', name: 'Adzan Madinah (Masjid Nabawi)' },
               { id: 'aqsa', name: 'Adzan Masjidil Aqsa' },
               { id: 'yusuf', name: 'Adzan Yusuf Islam (Merdu)' }
-            ] as adz}
+            ] as adz (adz.id)}
+              <!-- Removed .glass class to prevent nested glassmorphism layers -->
               <button 
                 onclick={() => adzanVoice.set(adz.id)}
                 class="flex items-center justify-between p-3.5 rounded-xl border transition-all text-left text-xs font-bold
-                  {adzanVoiceVal === adz.id 
+                  {$adzanVoice === adz.id 
                     ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400' 
-                    : 'border-white/5 glass text-zinc-400 hover:text-zinc-200'}"
+                    : 'border-white/5 bg-white/5 text-zinc-400 hover:text-zinc-200 hover:bg-white/10'}"
               >
                 <span>{adz.name}</span>
-                {#if adzanVoiceVal === adz.id}
+                {#if $adzanVoice === adz.id}
                   <Check class="w-4 h-4 text-emerald-400" />
                 {/if}
               </button>
@@ -491,11 +455,12 @@
         <!-- Theme Mode -->
         <div class="flex flex-col gap-2">
           <span class="text-xs text-zinc-500 font-semibold">Tema Tampilan</span>
-          <div class="flex p-1 rounded-xl glass border border-white/5 w-full">
+          <!-- Changed from glass to solid transparent style to prevent nested blur ghosting -->
+          <div class="flex p-1 rounded-xl bg-black/25 border border-white/5 w-full">
             <button 
               onclick={() => updateSetting('theme', 'light')}
               class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5
-                {currentSettings.theme === 'light' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+                {$settings.theme === 'light' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
             >
               <Sun class="w-3.5 h-3.5" />
               <span>Light</span>
@@ -503,7 +468,7 @@
             <button 
               onclick={() => updateSetting('theme', 'dark')}
               class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5
-                {currentSettings.theme === 'dark' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+                {$settings.theme === 'dark' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
             >
               <Moon class="w-3.5 h-3.5" />
               <span>Dark</span>
@@ -511,7 +476,7 @@
             <button 
               onclick={() => updateSetting('theme', 'system')}
               class="flex-1 py-2.5 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5
-                {currentSettings.theme === 'system' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
+                {$settings.theme === 'system' ? 'bg-emerald-600 text-white shadow-md' : 'text-zinc-400 hover:text-zinc-200'}"
             >
               <Laptop class="w-3.5 h-3.5" />
               <span>Sistem</span>
@@ -528,10 +493,10 @@
           <button 
             onclick={toggleWakeLock}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.keepScreenOn ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.keepScreenOn ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Layar Tetap Aktif"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.keepScreenOn ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.keepScreenOn ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
 
@@ -544,55 +509,54 @@
           <button 
             onclick={toggleFullscreen}
             class="w-11 h-6 rounded-full transition-colors relative
-              {currentSettings.fullscreen ? 'bg-emerald-600' : 'bg-white/10'}"
+              {$settings.fullscreen ? 'bg-emerald-600' : 'bg-white/10'}"
             aria-label="Toggle Mode Layar Penuh"
           >
-            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {currentSettings.fullscreen ? 'left-6' : 'left-1'}"></span>
+            <span class="w-4 h-4 bg-white rounded-full absolute top-1 transition-all {$settings.fullscreen ? 'left-6' : 'left-1'}"></span>
           </button>
         </div>
       </div>
 
       <!-- PREMIUM ACCESS CARD -->
-      <div class="glass border border-white/5 rounded-3xl p-6 space-y-4 {premiumActive ? 'premium-border' : ''}">
+      <div class="glass border border-white/5 rounded-3xl p-6 space-y-4 {$isPremium ? 'premium-border' : ''}">
         <div class="flex items-center justify-between pb-1">
           <h3 class="font-bold text-sm text-zinc-300 flex items-center gap-2">
-            <Crown class="w-4.5 h-4.5 {premiumActive ? 'text-amber-400' : 'text-emerald-400'}" />
+            <Crown class="w-4.5 h-4.5 {$isPremium ? 'text-amber-400' : 'text-emerald-400'}" />
             Creative Qur'an Premium
           </h3>
-          <!-- Admin Mode Toggle Switch (Only accessible for specified emails) -->
-          {#if emailInput && ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
+          <!-- Admin Mode Toggle Switch -->
+          {#if $userEmail && ALLOWED_ADMIN_EMAILS.includes($userEmail.trim().toLowerCase())}
             <div class="flex items-center gap-2">
               <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Mode Admin</span>
               <button 
                 onclick={() => {
-                  isAdmin.set(!adminActive);
-                  triggerToast(!adminActive ? "Mode Admin Diaktifkan." : "Mode Admin Dinonaktifkan (Pengguna Biasa).");
+                  $isAdmin = !$isAdmin;
+                  triggerToast(!$isAdmin ? "Mode Admin Dinonaktifkan (Pengguna Biasa)." : "Mode Admin Diaktifkan.");
                 }}
-                class="w-8 h-4.5 rounded-full transition-colors relative {!adminActive ? 'bg-zinc-700' : 'bg-emerald-600'}"
+                class="w-8 h-4.5 rounded-full transition-colors relative {!$isAdmin ? 'bg-zinc-700' : 'bg-emerald-600'}"
                 aria-label="Toggle Mode Admin"
               >
-                <span class="w-3 h-3 bg-white rounded-full absolute top-0.75 transition-all {adminActive ? 'left-4.25' : 'left-0.75'}"></span>
+                <span class="w-3 h-3 bg-white rounded-full absolute top-0.75 transition-all {$isAdmin ? 'left-4.25' : 'left-0.75'}"></span>
               </button>
             </div>
           {/if}
         </div>
 
-        <!-- Email Verification Input Field (Dropdown selection only) -->
+        <!-- Email Verification Input Field -->
         <div class="space-y-1.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Email Akun</span>
-            {#if emailInput && ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
+            {#if $userEmail && ALLOWED_ADMIN_EMAILS.includes($userEmail.trim().toLowerCase())}
               <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">Terverifikasi Admin</span>
             {/if}
           </div>
           <div class="relative">
             <select 
-              bind:value={emailInput}
-              onchange={handleEmailInput}
+              bind:value={$userEmail}
               class="w-full bg-stone-950/40 border border-white/10 text-white text-xs rounded-xl py-2.5 pl-3 pr-10 outline-none focus:border-emerald-500/50 transition-all font-semibold cursor-pointer appearance-none"
             >
               <option value="" disabled class="bg-stone-950 text-zinc-500">Pilih email terdaftar...</option>
-              {#each ALLOWED_ADMIN_EMAILS as email}
+              {#each ALLOWED_ADMIN_EMAILS as email (email)}
                 <option value={email} class="bg-stone-950 text-white">{email}</option>
               {/each}
             </select>
@@ -604,7 +568,7 @@
           </div>
         </div>
         
-        {#if premiumActive}
+        {#if $isPremium}
           <div class="space-y-3">
             <div class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold flex items-center gap-2">
               <Crown class="w-4 h-4 text-amber-400 fill-amber-400" />
@@ -613,7 +577,7 @@
             <p class="text-[10px] text-zinc-400 leading-relaxed font-semibold">Terima kasih atas kontribusi Anda! Seluruh tema premium emas, performa lancar, dan badge Pro telah terbuka.</p>
             <button 
               onclick={() => {
-                isPremium.set(false);
+                $isPremium = false;
                 triggerToast("Premium dinonaktifkan.");
               }}
               class="w-full inline-flex items-center justify-center gap-2 bg-rose-600/10 hover:bg-rose-600/20 text-rose-400 border border-rose-500/20 text-xs font-bold py-3 rounded-xl transition-all"
@@ -657,9 +621,10 @@
         </h3>
 
         <div class="flex flex-col gap-2">
+          <!-- Changed from glass to bg-white/5 transparent buttons to prevent nested blur ghosting -->
           <button 
             onclick={shareApp}
-            class="w-full flex items-center gap-3 p-3 rounded-xl glass border border-white/5 hover:border-emerald-500/20 text-left text-xs font-bold text-zinc-300 hover:text-white"
+            class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/20 hover:bg-white/10 text-left text-xs font-bold text-zinc-300 hover:text-white"
           >
             <Share2 class="w-4.5 h-4.5 text-zinc-500" />
             <span>Bagikan Aplikasi</span>
@@ -667,7 +632,7 @@
 
           <button 
             onclick={() => showRatingModal = true}
-            class="w-full flex items-center gap-3 p-3 rounded-xl glass border border-white/5 hover:border-emerald-500/20 text-left text-xs font-bold text-zinc-300 hover:text-white"
+            class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/20 hover:bg-white/10 text-left text-xs font-bold text-zinc-300 hover:text-white"
           >
             <Star class="w-4.5 h-4.5 text-zinc-500" />
             <span>Beri Rating Bintang 5</span>
@@ -675,7 +640,7 @@
 
           <button 
             onclick={() => showPrivacyModal = true}
-            class="w-full flex items-center gap-3 p-3 rounded-xl glass border border-white/5 hover:border-emerald-500/20 text-left text-xs font-bold text-zinc-300 hover:text-white"
+            class="w-full flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5 hover:border-emerald-500/20 hover:bg-white/10 text-left text-xs font-bold text-zinc-300 hover:text-white"
           >
             <Shield class="w-4.5 h-4.5 text-zinc-500" />
             <span>Kebijakan Privasi</span>
@@ -691,7 +656,7 @@
 
 <!-- TOAST ALERTS -->
 {#if showToast}
-  <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-emerald-600 border border-emerald-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-50 animate-fade-in flex items-center gap-2">
+  <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-emerald-600 border border-emerald-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-[200] animate-fade-in flex items-center gap-2">
     <Check class="w-4 h-4 text-emerald-100" />
     <span>{toastMessage}</span>
   </div>
@@ -699,8 +664,9 @@
 
 <!-- RATING DIALOG MODAL -->
 {#if showRatingModal}
-  <div class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-    <div class="glass-emerald border border-emerald-500/30 p-6 rounded-3xl text-center max-w-sm w-full space-y-6 shadow-2xl relative">
+  <div class="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+    <!-- Changed from glass-emerald to bg-zinc-950 solid border to avoid double blur and visual artifacts -->
+    <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-3xl text-center max-w-sm w-full space-y-6 shadow-2xl relative">
       <button 
         onclick={() => showRatingModal = false} 
         class="absolute top-4 right-4 text-xs font-bold text-zinc-400 hover:text-white"
@@ -716,7 +682,7 @@
 
       <!-- Star Picker -->
       <div class="flex justify-center gap-2 py-1">
-        {#each Array.from({ length: 5 }, (_, i) => i + 1) as star}
+        {#each Array.from({ length: 5 }, (_, i) => i + 1) as star (star)}
           <button 
             onclick={() => ratingStars = star}
             class="text-zinc-600 hover:text-gold-500 transition-colors duration-200"
@@ -732,7 +698,7 @@
       <textarea 
         bind:value={ratingComment}
         placeholder="Tulis ulasan Anda di sini (opsional)..."
-        class="w-full p-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 h-20 placeholder:text-zinc-500 bg-emerald-950/20"
+        class="w-full p-3 rounded-xl bg-black/20 border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 h-20 placeholder:text-zinc-500 bg-emerald-950/20"
       ></textarea>
 
       <button 
@@ -747,8 +713,9 @@
 
 <!-- PRIVACY POLICY MODAL -->
 {#if showPrivacyModal}
-  <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-fade-in">
-    <div class="glass-emerald border border-emerald-500/30 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
+  <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+    <!-- Changed from glass-emerald to bg-zinc-950 solid border to avoid double blur and visual artifacts -->
+    <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-3xl max-w-md w-full space-y-4 shadow-2xl relative max-h-[85vh] overflow-y-auto">
       <button 
         onclick={() => showPrivacyModal = false} 
         class="absolute top-4 right-4 text-xs font-bold text-zinc-400 hover:text-white"
@@ -794,4 +761,3 @@
     </div>
   </div>
 {/if}
-

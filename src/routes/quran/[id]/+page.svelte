@@ -34,20 +34,6 @@
   let tafsir = $state<TafsirDetail | null>(null);
   let loading = $state(true);
   let error = $state<string | null>(null);
-  
-  // Settings values from store
-  let currentSettings = $state<AppSettings>({ ...defaultSettings });
-  onMount(() => {
-    const unsubSettings = settings.subscribe(val => currentSettings = val);
-    return () => unsubSettings();
-  });
-
-  // Favorites & Bookmarks logic
-  let favList = $state<FavoriteAyah[]>([]);
-  onMount(() => {
-    const unsubFav = favorites.subscribe(val => favList = val);
-    return () => unsubFav();
-  });
 
   // Track active verse details for audio playback
   let activeAyahNum = $state<number | null>(null);
@@ -104,9 +90,14 @@
   let allSurahs = $state<Surah[]>([]);
   let showNavigationModal = $state(false);
   let showAgendaModal = $state(false);
-  let selectedSurahNum = $state(surahId);
+  let selectedSurahNum = $state(0);
   let selectedAyahNumInput = $state(1);
   let selectedHalamanNum = $state(26);
+
+  // Sync selectedSurahNum when route changes (resolves compiler warning)
+  $effect(() => {
+    selectedSurahNum = surahId;
+  });
 
   // Auto scroll states
   let autoScrollActive = $state(false);
@@ -192,7 +183,6 @@
       surah = detailData;
       tafsir = tafsirData;
       allSurahs = surahsList;
-      selectedSurahNum = detailData.nomor;
 
       // Update Last Read
       lastRead.set({
@@ -244,12 +234,6 @@
   }
 
   // Audio mapping helper for Qori selection
-  // equran.id v2 API returns qori mapping options 1 to 5.
-  // 01 -> Abdurrahman Al-Sudais
-  // 02 -> Abdul Basit
-  // 03 -> Mishary Rashid Al-Afasy
-  // 04 -> Hani Al-Rifai
-  // 05 -> Abdullah Al-Juhany
   function getAudioUrl(ayah: Ayah): string {
     const qoriMap = {
       'juhany': '01',
@@ -259,7 +243,7 @@
       'afasy': '05',
       'aldosari': '06'
     };
-    const key = qoriMap[currentSettings.qori] || '05';
+    const key = qoriMap[$settings.qori] || '05';
     return ayah.audio[key] || Object.values(ayah.audio)[0];
   }
 
@@ -337,7 +321,7 @@
   // Favorites toggling
   function toggleFavorite(ayah: Ayah) {
     if (!surah) return;
-    const exists = favList.some(f => f.surahNumber === surahId && f.ayahNumber === ayah.nomorAyat);
+    const exists = $favorites.some(f => f.surahNumber === surahId && f.ayahNumber === ayah.nomorAyat);
     
     if (exists) {
       favorites.update(list => list.filter(f => !(f.surahNumber === surahId && f.ayahNumber === ayah.nomorAyat)));
@@ -357,7 +341,7 @@
   }
 
   function isFavorite(ayahNum: number): boolean {
-    return favList.some(f => f.surahNumber === surahId && f.ayahNumber === ayahNum);
+    return $favorites.some(f => f.surahNumber === surahId && f.ayahNumber === ayahNum);
   }
 
   // Share functionality
@@ -380,13 +364,9 @@
     return match ? match.teks : "Tafsir untuk ayat ini tidak ditemukan.";
   }
 
-  // Highlights Tajwid dynamically (mock representation for demonstration of colorful tajwid feature)
-  // In a production app, the string can be parsed for specific characters or rules.
-  // Here we wrap typical tajwid words dynamically.
+  // Highlights Tajwid dynamically
   function processTajwid(text: string, enabled: boolean): string {
     if (!enabled) return text;
-    // Replace typical vowel markers/patterns with color spans for visual tajwid feedback
-    // This is a premium mockup representation of colorful Tajwid text engine
     return text
       .replace(/ّ/g, '<span class="tajwid-ghunnah">ّ</span>')
       .replace(/ْ/g, '<span class="tajwid-qalqalah">ْ</span>')
@@ -399,7 +379,7 @@
 
   <!-- TOAST ALERTS -->
   {#if showToast}
-    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-emerald-600 border border-emerald-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-50 animate-fade-in flex items-center gap-2">
+    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-emerald-600 border border-emerald-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-[200] animate-fade-in flex items-center gap-2">
       <Check class="w-4 h-4 text-emerald-100" />
       <span>{toastMessage}</span>
     </div>
@@ -430,7 +410,7 @@
       </div>
 
       <div class="space-y-4">
-        {#each Array(3) as _}
+        {#each Array(3) as _, i (i)}
           <div class="glass border border-white/5 rounded-2xl p-5 space-y-4 animate-pulse">
             <div class="flex justify-between items-center">
               <div class="w-8 h-8 rounded-full bg-white/5"></div>
@@ -489,7 +469,7 @@
 
     <!-- AYAH LIST -->
     <div class="space-y-4">
-      {#each surah.ayat as ayah}
+      {#each surah.ayat as ayah (ayah.nomorAyat)}
         {@const isActive = activeAyahNum === ayah.nomorAyat}
         <div 
           id={`ayah-${ayah.nomorAyat}`}
@@ -577,11 +557,11 @@
           <div class="text-right py-2 leading-loose">
             <p 
               class="text-white font-arabic-utsmani" 
-              style="font-size: {currentSettings.arabicFontSize}px; font-family: {currentSettings.arabicScript === 'utsmani' ? 'var(--font-arabic-utsmani)' : 'var(--font-arabic-indopak)'}; line-height: 2.2;"
+              style="font-size: {$settings.arabicFontSize}px; font-family: {$settings.arabicScript === 'utsmani' ? 'var(--font-arabic-utsmani)' : 'var(--font-arabic-indopak)'}; line-height: 2.2;"
               dir="rtl"
             >
-              {@html processTajwid(ayah.teksArab, currentSettings.tajwidColored)}
-              {#if currentSettings.arabicNumberVisible}
+              {@html processTajwid(ayah.teksArab, $settings.tajwidColored)}
+              {#if $settings.arabicNumberVisible}
                 <span class="inline-flex items-center justify-center font-sans text-xs border border-emerald-500/30 text-emerald-400 w-6.5 h-6.5 rounded-full mr-2 select-none" dir="ltr">
                   {ayah.nomorAyat}
                 </span>
@@ -590,20 +570,20 @@
           </div>
 
           <!-- TRANSLITERATION (LATIN) -->
-          {#if currentSettings.latinEnabled}
+          {#if $settings.latinEnabled}
             <p 
               class="text-emerald-400/90 font-medium italic leading-relaxed"
-              style="font-size: {currentSettings.latinFontSize}px"
+              style="font-size: {$settings.latinFontSize}px"
             >
               {ayah.teksLatin}
             </p>
           {/if}
 
           <!-- INDONESIAN TRANSLATION -->
-          {#if currentSettings.translationEnabled}
+          {#if $settings.translationEnabled}
             <p 
               class="text-zinc-300 leading-relaxed font-normal"
-              style="font-size: {currentSettings.translationFontSize}px"
+              style="font-size: {$settings.translationFontSize}px"
             >
               {ayah.teksIndonesia}
             </p>
@@ -646,9 +626,10 @@
                   <span class="text-xs text-zinc-500 font-semibold animate-pulse">Memuat arti kata...</span>
                 </div>
               {:else if perKataCache[ayah.nomorAyat]}
+                <!-- Removed nested .glass class below and replaced with clean bg-white/5 transparent card -->
                 <div class="flex flex-wrap gap-2 justify-end py-2" dir="rtl">
-                  {#each perKataCache[ayah.nomorAyat] as word}
-                    <div class="glass border border-white/5 rounded-2xl p-2.5 flex flex-col items-center justify-center min-w-[75px] text-center space-y-1">
+                  {#each perKataCache[ayah.nomorAyat] as word, i (word.position || word.text_uthmani + '-' + i)}
+                    <div class="bg-white/5 border border-white/10 rounded-2xl p-2.5 flex flex-col items-center justify-center min-w-[75px] text-center space-y-1">
                       <!-- Arabic Word -->
                       <span class="text-base font-arabic-utsmani text-white select-none">{word.text_uthmani || word.text}</span>
                       <!-- Transliteration -->
@@ -683,7 +664,7 @@
       
       <div class="flex-1 min-w-0">
         <h4 class="text-xs font-bold text-white truncate">{surah.namaLatin} • Ayah {activeAyahNum}</h4>
-        <span class="text-[9px] text-zinc-400 font-bold uppercase tracking-wider block mt-0.5">Qori: Sheik {currentSettings.qori}</span>
+        <span class="text-[9px] text-zinc-400 font-bold uppercase tracking-wider block mt-0.5">Qori: Sheik {$settings.qori}</span>
       </div>
 
       <div class="flex items-center gap-1 shrink-0">
@@ -769,8 +750,9 @@
 
   <!-- NAVIGATION INDEX MODAL (ISI) -->
   {#if showNavigationModal}
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-4 z-50 animate-fade-in">
-      <div class="glass-emerald border border-emerald-500/20 p-6 rounded-t-3xl md:rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-4 z-[100] animate-fade-in">
+      <!-- Changed from glass-emerald to bg-zinc-950 solid border to avoid double blur and visual artifacts -->
+      <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-t-3xl md:rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative">
         <!-- Close button top-right -->
         <button 
           onclick={() => showNavigationModal = false} 
@@ -790,7 +772,7 @@
               bind:value={selectedSurahNum}
               class="w-full py-2.5 px-2 rounded-xl glass border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 bg-emerald-950"
             >
-              {#each allSurahs as s}
+              {#each allSurahs as s (s.nomor)}
                 <option value={s.nomor} class="bg-zinc-950 text-white">{s.nomor}. {s.namaLatin}</option>
               {/each}
             </select>
@@ -843,8 +825,9 @@
 
   <!-- AGENDA PRAYER TIMES MODAL -->
   {#if showAgendaModal}
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-      <div class="glass-emerald border border-emerald-500/20 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
+    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[100] animate-fade-in">
+      <!-- Changed from glass-emerald to bg-zinc-950 solid border to avoid double blur and visual artifacts -->
+      <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-3xl max-w-sm w-full space-y-4 shadow-2xl relative">
         <button 
           onclick={() => showAgendaModal = false} 
           class="absolute top-4 right-4 text-xs font-bold text-zinc-400 hover:text-white"
@@ -865,7 +848,7 @@
               { label: 'Ashar', val: prayerTimesData.Asr },
               { label: 'Maghrib', val: prayerTimesData.Maghrib },
               { label: 'Isya', val: prayerTimesData.Isha }
-            ] as shol}
+            ] as shol (shol.label)}
               <div class="flex justify-between items-center py-2.5">
                 <span class="text-zinc-400">{shol.label}</span>
                 <span class="text-white font-bold">{shol.val} WIB</span>

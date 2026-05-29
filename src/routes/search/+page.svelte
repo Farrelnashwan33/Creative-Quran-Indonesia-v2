@@ -94,7 +94,7 @@
       <div class="space-y-4">
         <h3 class="font-bold text-xs text-zinc-400 tracking-wider uppercase px-1">Pencarian Populer</h3>
         <div class="flex flex-wrap gap-2">
-          {#each popularSearches as item}
+          {#each popularSearches as item (item)}
             <button 
               onclick={() => { searchQuery = item; saveSearch(item); }}
               class="px-4 py-2.5 rounded-xl glass border border-white/5 hover:border-emerald-500/20 text-xs font-bold text-zinc-300 hover:text-emerald-400 transition-all duration-300"
@@ -123,7 +123,7 @@
           </div>
         {:else}
           <div class="flex flex-col gap-2">
-            {#each recentSearches as item}
+            {#each recentSearches as item (item)}
               <button 
                 onclick={() => searchQuery = item}
                 class="flex items-center justify-between p-3.5 rounded-xl glass border border-white/5 hover:border-emerald-500/20 text-left text-xs font-bold text-zinc-300 hover:text-white"
@@ -149,7 +149,7 @@
 
       {#if loading}
         <div class="space-y-3">
-          {#each Array(3) as _}
+          {#each Array(3) as _, i (i)}
             <div class="glass border border-white/5 rounded-2xl p-5 h-16 animate-pulse"></div>
           {/each}
         </div>
@@ -161,7 +161,7 @@
           </div>
         {:else}
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {#each filteredResults as surah}
+            {#each filteredResults as surah (surah.nomor)}
               <a 
                 href="/quran/{surah.nomor}" 
                 onclick={() => saveSearch(searchQuery)}
