@@ -38,8 +38,9 @@
   ];
 
   function handleEmailInput() {
-    userEmail.set(emailInput);
-    if (!ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())) {
+    userEmail.set(emailInput || '');
+    const cleanEmail = (emailInput || '').trim().toLowerCase();
+    if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
       let currentAdmin = false;
       isAdmin.subscribe(v => currentAdmin = v)();
       if (currentAdmin) {
@@ -65,8 +66,9 @@
       adminActive = val;
     });
     const unsubEmail = userEmail.subscribe(val => {
-      emailInput = val;
-      if (!ALLOWED_ADMIN_EMAILS.includes(val.trim().toLowerCase())) {
+      emailInput = val || '';
+      const cleanEmail = emailInput.trim().toLowerCase();
+      if (!cleanEmail || !ALLOWED_ADMIN_EMAILS.includes(cleanEmail)) {
         let currentAdmin = false;
         isAdmin.subscribe(v => currentAdmin = v)();
         if (currentAdmin) {
@@ -562,7 +564,7 @@
             Creative Qur'an Premium
           </h3>
           <!-- Admin Mode Toggle Switch (Only accessible for specified emails) -->
-          {#if ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
+          {#if emailInput && ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
             <div class="flex items-center gap-2">
               <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Mode Admin</span>
               <button 
@@ -583,7 +585,7 @@
         <div class="space-y-1.5 p-3.5 rounded-2xl bg-white/[0.02] border border-white/5">
           <div class="flex items-center justify-between">
             <span class="text-[10px] text-zinc-500 font-bold uppercase tracking-wider">Email Akun</span>
-            {#if ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
+            {#if emailInput && ALLOWED_ADMIN_EMAILS.includes(emailInput.trim().toLowerCase())}
               <span class="text-[9px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/25">Terverifikasi Admin</span>
             {/if}
           </div>
