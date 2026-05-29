@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cqi-cache-v1';
+const CACHE_NAME = 'cqi-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/manifest.json',
@@ -35,7 +35,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // For API requests, try network first, then fallback to cache
+  // 1. API Requests: Network-First with Cache Fallback
   if (url.hostname === 'equran.id' || url.hostname === 'api.aladhan.com') {
     event.respondWith(
       caches.open(CACHE_NAME).then((cache) => {
@@ -49,15 +49,33 @@ self.addEventListener('fetch', (event) => {
           });
       })
     );
-  } else {
-    // For other assets, try cache first, then fallback to network
+  } 
+  // 2. Navigation (HTML pages) and SvelteKit JS chunks: Network-First with Cache Fallback
+  // This solves the 404 cache mismatch issue during updates/new deployments.
+  else if (request.mode === 'navigate' || url.pathname.includes('/_app/') || url.pathname.endsWith('.js')) {
+    event.respondWith(
+      caches.open(CACHE_NAME).then((cache) => {
+        return fetch(request)
+          .then((response) => {
+            if (response.status === 200) {
+              cache.put(request, response.clone());
+            }
+            return response;
+          })
+          .catch(() => {
+            return cache.match(request);
+          });
+      })
+    );
+  } 
+  // 3. Static assets: Cache-First with Network Fallback
+  else {
     event.respondWith(
       caches.match(request).then((cachedResponse) => {
         if (cachedResponse) {
           return cachedResponse;
         }
         return fetch(request).then((response) => {
-          // Cache newly requested assets
           if (response.status === 200 && request.method === 'GET') {
             const responseClone = response.clone();
             caches.open(CACHE_NAME).then((cache) => {

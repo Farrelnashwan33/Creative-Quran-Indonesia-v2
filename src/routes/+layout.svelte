@@ -168,27 +168,30 @@
   // ResizeObserver for modern layout query sizing
   let containerWidth = $state(1024);
   let layoutContainer = $state<HTMLElement | null>(null);
-  let resizeObserver: ResizeObserver | null = null;
 
-  onMount(() => {
-    mounted = true;
-    
+  $effect(() => {
     if (typeof window !== 'undefined' && layoutContainer) {
-      resizeObserver = new ResizeObserver((entries) => {
+      const observer = new ResizeObserver((entries) => {
         for (const entry of entries) {
           containerWidth = entry.contentRect.width;
         }
       });
-      resizeObserver.observe(layoutContainer);
+      observer.observe(layoutContainer);
+      return () => {
+        observer.disconnect();
+      };
     }
+  });
 
+  onMount(() => {
+    mounted = true;
+    
     loadTodayPrayerTimes();
 
     // Check clock time every 10 seconds
     const intervalId = setInterval(checkAdzan, 10000);
 
     return () => {
-      if (resizeObserver) resizeObserver.disconnect();
       clearInterval(intervalId);
       releaseWakeLock();
       if (adzanAudioPlayer) adzanAudioPlayer.pause();
