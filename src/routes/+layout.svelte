@@ -282,8 +282,8 @@
       <div class="flex items-center gap-3 px-2">
         <div class="w-10 h-10 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300
           {$isPremium 
-            ? 'bg-gradient-to-tr from-amber-500 to-yellow-300 shadow-amber-950/20' 
-            : 'bg-gradient-to-tr from-emerald-600 to-emerald-400 shadow-emerald-950/20'}">
+            ? 'bg-linear-to-tr from-amber-500 to-yellow-300 shadow-amber-950/20' 
+            : 'bg-linear-to-tr from-emerald-600 to-emerald-400 shadow-emerald-950/20'}">
           {#if $isPremium}
             <Crown class="w-5.5 h-5.5 text-black fill-black" />
           {:else}
@@ -316,7 +316,7 @@
                 : 'text-zinc-400 hover:text-zinc-200 hover:bg-white/5 border border-transparent'}"
           >
             <!-- Hover highlight element -->
-            <div class="absolute inset-0 bg-gradient-to-r transition-opacity duration-300
+            <div class="absolute inset-0 bg-linear-to-r transition-opacity duration-300
               {$isPremium ? 'from-amber-500/5' : 'from-emerald-600/5'} to-transparent opacity-0 group-hover:opacity-100"></div>
             <Icon class="w-5 h-5 transition-transform duration-300 group-hover:scale-110 
               {isActive(item.path) 
@@ -379,7 +379,7 @@
   <header class="flex md:hidden items-center justify-between px-5 py-4 glass border-b border-white/5 sticky top-0 z-30 backdrop-blur-md {$isPremium ? 'premium-border' : ''}">
     <div class="flex items-center gap-2.5">
       <div class="w-8 h-8 rounded-lg flex items-center justify-center
-        {$isPremium ? 'bg-gradient-to-tr from-amber-500 to-yellow-300' : 'bg-gradient-to-tr from-emerald-600 to-emerald-400'}">
+        {$isPremium ? 'bg-linear-to-tr from-amber-500 to-yellow-300' : 'bg-linear-to-tr from-emerald-600 to-emerald-400'}">
         {#if $isPremium}
           <Crown class="w-4.5 h-4.5 text-black fill-black" />
         {:else}
@@ -455,9 +455,9 @@
 
   <!-- ADZAN ALERT POPUP OVERLAY -->
   {#if showAdzanModal}
-    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-fade-in">
       <div class="glass-emerald border border-emerald-500/30 p-8 rounded-3xl text-center max-w-sm w-full space-y-6 shadow-2xl relative overflow-hidden">
-        <div class="absolute inset-0 opacity-5 bg-repeat bg-[size:30px] pointer-events-none islamic-bg"></div>
+        <div class="absolute inset-0 opacity-5 bg-repeat bg-size-[30px] pointer-events-none islamic-bg"></div>
         
         <div class="relative z-10 space-y-3">
           <div class="w-16 h-16 rounded-full bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center mx-auto animate-bounce">
@@ -486,10 +486,10 @@
 
   <!-- PREMIUM MEMBERSHIP GO-PAY MODAL -->
   {#if $showPremiumPaymentModal}
-    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[100] animate-fade-in">
+    <div class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-100 animate-fade-in">
       <div class="glass border border-amber-500/30 p-6 rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative overflow-hidden">
         <!-- Background pattern overlay -->
-        <div class="absolute inset-0 opacity-5 bg-repeat bg-[size:30px] pointer-events-none islamic-bg"></div>
+        <div class="absolute inset-0 opacity-5 bg-repeat bg-size-[30px] pointer-events-none islamic-bg"></div>
 
         <button 
           onclick={() => $showPremiumPaymentModal = false} 
@@ -526,15 +526,15 @@
         <div class="border border-white/10 rounded-2xl p-4 space-y-3.5 bg-amber-950/15">
           <div class="flex items-center justify-between text-xs">
             <span class="text-zinc-400 font-semibold">Metode Pembayaran</span>
-            <span class="text-white font-extrabold text-emerald-400">GoPay (Instan)</span>
+            <span class="font-extrabold text-emerald-400">GoPay (Instan)</span>
           </div>
           <div class="flex items-center justify-between text-xs">
             <span class="text-zinc-400 font-semibold">Nomor GoPay</span>
-            <span class="text-white font-extrabold select-all text-amber-300">081224079173</span>
+            <span class="font-extrabold select-all text-amber-300">081224079173</span>
           </div>
           <div class="flex items-center justify-between text-xs">
             <span class="text-zinc-400 font-semibold">Jumlah Transfer</span>
-            <span class="text-white font-extrabold text-amber-400">Rp 150.000</span>
+            <span class="font-extrabold text-amber-400">Rp 150.000</span>
           </div>
         </div>
 
@@ -554,7 +554,7 @@
               $showPremiumPaymentModal = false;
               triggerToast("Selamat! Royal Gold Premium Berhasil Diaktifkan.");
             }}
-            class="w-full inline-flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs py-3.5 rounded-2xl shadow-lg shadow-amber-950/20 active:scale-95 transition-all"
+            class="w-full inline-flex items-center justify-center gap-2 bg-linear-to-r from-amber-500 to-yellow-300 hover:from-amber-400 hover:to-yellow-200 text-black font-black text-xs py-3.5 rounded-2xl shadow-lg shadow-amber-950/20 active:scale-95 transition-all"
           >
             <Crown class="w-4 h-4 text-black fill-black" />
             <span>Konfirmasi & Aktifkan (Simulasi)</span>
@@ -573,7 +573,7 @@
 
   <!-- TOAST ALERTS -->
   {#if showToast}
-    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-amber-600 border border-amber-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-[200] animate-fade-in flex items-center gap-2">
+    <div class="fixed top-20 left-1/2 -translate-x-1/2 px-5 py-3.5 bg-amber-600 border border-amber-500/30 text-white text-xs font-bold rounded-2xl shadow-xl z-200 animate-fade-in flex items-center gap-2">
       <Crown class="w-4 h-4 text-amber-100 fill-amber-100" />
       <span>{toastMessage}</span>
     </div>
