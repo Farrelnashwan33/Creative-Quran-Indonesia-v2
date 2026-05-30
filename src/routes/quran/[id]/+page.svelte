@@ -3,7 +3,7 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import { fetchSurahDetail, fetchTafsir, fetchSurahs, fetchPrayerTimes, fetchPrayerTimesByCity, type SurahDetail, type TafsirDetail, type Ayah, type Surah } from '$lib/api';
-  import { settings, lastRead, favorites, readingHistory, readingStats, defaultSettings, type AppSettings, type FavoriteAyah } from '$lib/stores';
+  import { settings, lastRead, favorites, readingHistory, readingStats, defaultSettings, type AppSettings, type FavoriteAyah, isPremium, showPremiumPaymentModal } from '$lib/stores';
   import { 
     ArrowLeft, 
     Play, 
@@ -25,7 +25,8 @@
     ChevronsDown,
     Calendar,
     Compass,
-    Languages
+    Languages,
+    Crown
   } from '@lucide/svelte';
 
   const surahId = $derived(Number($page.params.id));
@@ -43,6 +44,10 @@
   let expandedPerKataAyah = $state<number | null>(null);
   let perKataCache = $state<Record<number, any[]>>({});
   let loadingPerKata = $state(false);
+
+  // Premium Quick Jump states
+  let showQuickJump = $state(false);
+  let quickJumpSearch = $state('');
 
   async function togglePerKata(ayahNumber: number) {
     if (expandedPerKataAyah === ayahNumber) {
@@ -175,18 +180,35 @@
     }
   }
 
-  onMount(async () => {
+  // Load surah details reactively whenever surahId changes (handles SvelteKit param navigation)
+  $effect(() => {
+    if (surahId) {
+      loadSurahData(surahId);
+    }
+  });
+
+  async function loadSurahData(id: number) {
+    loading = true;
+    error = null;
+
+    // Reset player and expanded states when changing surah
+    if (audioPlayer) {
+      audioPlayer.pause();
+      audioPlayer = null;
+    }
+    isPlaying = false;
+    activeAyahNum = null;
+    expandedTafsirAyah = null;
+    expandedPerKataAyah = null;
+
     try {
-      // Parallel loading for fast performance
-      const [detailData, tafsirData, surahsList] = await Promise.all([
-        fetchSurahDetail(surahId),
-        fetchTafsir(surahId),
-        fetchSurahs().catch(() => [])
+      const [detailData, tafsirData] = await Promise.all([
+        fetchSurahDetail(id),
+        fetchTafsir(id)
       ]);
       
       surah = detailData;
       tafsir = tafsirData;
-      allSurahs = surahsList;
 
       // Update Last Read
       lastRead.set({
@@ -206,22 +228,29 @@
           surahName: detailData.namaLatin,
           timestamp: new Date().toLocaleDateString('id-ID')
         };
-        // Avoid duplicate history of the same surah in close succession
         const filtered = list.filter(x => x.surahNumber !== detailData.nomor);
         return [item, ...filtered].slice(0, 20);
       });
 
       // Update reading statistics count for today
       updateStats();
-
-      // Load agenda prayer times
-      loadAgendaPrayerTimes();
-
     } catch (e) {
       error = "Gagal memuat detail surah atau tafsir.";
     } finally {
       loading = false;
     }
+  }
+
+  onMount(async () => {
+    try {
+      const surahsList = await fetchSurahs();
+      allSurahs = surahsList;
+    } catch (e) {
+      console.warn("Gagal memuat daftar surah:", e);
+    }
+
+    // Load agenda prayer times
+    loadAgendaPrayerTimes();
   });
 
   function updateStats() {
@@ -395,8 +424,58 @@
       <div class="w-9 h-9 rounded-xl glass border border-white/5 flex items-center justify-center group-hover:border-emerald-500/20">
         <ArrowLeft class="w-4.5 h-4.5" />
       </div>
-      <span class="text-xs font-bold">Kembali ke Daftar</span>
+      <span class="text-xs font-bold hidden sm:inline">Kembali ke Daftar</span>
     </a>
+
+    <!-- Premium Quick Surah Jump Selector -->
+    <div class="relative">
+      {#if $isPremium}
+        <button 
+          onclick={() => showQuickJump = !showQuickJump}
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-amber-500/25 bg-amber-500/10 text-amber-400 font-bold text-xs hover:bg-amber-500/20 active:scale-95 transition-all cursor-pointer shadow-sm"
+        >
+          <Crown class="w-3.5 h-3.5 fill-amber-400" />
+          <span>Lompat Surah</span>
+          <ChevronDown class="w-3.5 h-3.5" />
+        </button>
+        
+        {#if showQuickJump}
+          <div class="absolute top-11 left-1/2 -translate-x-1/2 w-60 bg-zinc-950/95 border border-amber-500/25 rounded-2xl shadow-2xl p-2.5 z-50 animate-slide-up">
+            <div class="bg-zinc-950 pb-2 border-b border-white/5 mb-1.5">
+              <input 
+                type="text" 
+                bind:value={quickJumpSearch}
+                placeholder="Cari surah..." 
+                class="w-full bg-white/5 border border-white/10 text-white text-xs rounded-lg py-1.5 px-2.5 outline-none focus:border-amber-500/50 font-semibold"
+              />
+            </div>
+            <div class="space-y-0.5 max-h-56 overflow-y-auto pr-0.5">
+              {#each allSurahs.filter(s => s.namaLatin.toLowerCase().includes(quickJumpSearch.toLowerCase())) as s (s.nomor)}
+                <a 
+                  href={`/quran/${s.nomor}`}
+                  onclick={() => showQuickJump = false}
+                  class="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-left text-xs font-semibold text-zinc-300 hover:bg-amber-500/10 hover:text-amber-400 transition-all
+                    {s.nomor === surahId ? 'bg-amber-500/10 text-amber-400 font-bold' : ''}"
+                >
+                  <span>{s.nomor}. {s.namaLatin}</span>
+                  <span class="text-[9px] text-zinc-500 font-bold">{s.jumlahAyat} Ayat</span>
+                </a>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      {:else}
+        <!-- Show locked option for non-premium to upsell -->
+        <button 
+          onclick={() => showPremiumPaymentModal.set(true)}
+          class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-white/5 bg-white/5 text-zinc-400 font-bold text-xs hover:bg-white/10 active:scale-95 transition-all cursor-pointer"
+        >
+          <Crown class="w-3.5 h-3.5 text-zinc-500" />
+          <span>Lompat Surah</span>
+          <ChevronDown class="w-3.5 h-3.5" />
+        </button>
+      {/if}
+    </div>
     
     <a href="/settings" class="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-200">
       <SettingsIcon class="w-4.5 h-4.5" />
