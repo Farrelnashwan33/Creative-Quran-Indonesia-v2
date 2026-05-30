@@ -38,7 +38,7 @@
 
   // Track active verse details for audio playback
   let activeAyahNum = $state<number | null>(null);
-  let audioPlayer = $state<HTMLAudioElement | null>(null);
+  let audioPlayer: HTMLAudioElement | null = null;
   let isPlaying = $state(false);
   let expandedTafsirAyah = $state<number | null>(null);
   let expandedPerKataAyah = $state<number | null>(null);

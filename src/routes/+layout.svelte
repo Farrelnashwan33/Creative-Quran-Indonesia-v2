@@ -53,7 +53,7 @@
 
   // Alarm states
   let todayPrayerTimes = $state<PrayerTimes | null>(null);
-  let adzanAudioPlayer = $state<HTMLAudioElement | null>(null);
+  let adzanAudioPlayer: HTMLAudioElement | null = null;
   let showAdzanModal = $state(false);
   let activeAdzanName = $state('');
 
