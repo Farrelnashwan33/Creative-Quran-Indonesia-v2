@@ -5,6 +5,17 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		%sveltekit.head%
 		<script>
+			// Detect Samsung devices and browsers synchronously before rendering to prevent initial paint GPU compositor crashes
+			(function() {
+				var ua = navigator.userAgent;
+				var isSamsungBrowser = /SamsungBrowser/i.test(ua);
+				var isSamsungDevice = /Samsung/i.test(ua) || /SM-[A-Z0-9]+/i.test(ua);
+				if (isSamsungBrowser || isSamsungDevice) {
+					document.documentElement.classList.add('samsung-device');
+				}
+			})();
+		</script>
+		<script>
 			if ('serviceWorker' in navigator) {
 				window.addEventListener('load', () => {
 					navigator.serviceWorker.register('/service-worker.js')
