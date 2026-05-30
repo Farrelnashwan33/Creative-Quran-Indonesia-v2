@@ -186,6 +186,16 @@
   onMount(() => {
     mounted = true;
     
+    // Detect Samsung devices/browsers to apply CSS fallback class (to prevent backdrop-filter rendering bugs)
+    if (typeof navigator !== 'undefined') {
+      const ua = navigator.userAgent;
+      const isSamsungBrowser = /SamsungBrowser/i.test(ua);
+      const isSamsungDevice = /Samsung/i.test(ua) || /SM-[A-Z0-9]+/i.test(ua);
+      if (isSamsungBrowser || isSamsungDevice) {
+        document.documentElement.classList.add('samsung-device');
+      }
+    }
+    
     loadTodayPrayerTimes();
 
     // Check clock time every 10 seconds
