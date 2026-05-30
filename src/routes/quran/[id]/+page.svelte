@@ -91,6 +91,22 @@
     }, 2500);
   }
 
+  // Madani Mushaf page numbers list for all 114 surahs
+  const SURAH_START_PAGES = [
+    1, 2, 50, 77, 106, 128, 151, 177, 187, 208, 
+    221, 235, 249, 255, 262, 267, 282, 293, 305, 312, 
+    322, 332, 342, 350, 359, 367, 377, 385, 396, 404, 
+    411, 415, 418, 428, 434, 440, 446, 453, 458, 467, 
+    477, 483, 489, 496, 499, 502, 507, 511, 515, 518, 
+    520, 523, 526, 528, 531, 534, 537, 542, 545, 549, 
+    551, 553, 554, 556, 558, 560, 562, 564, 566, 568, 
+    570, 572, 574, 575, 577, 578, 580, 582, 583, 585, 
+    586, 587, 587, 589, 590, 591, 591, 592, 593, 594, 
+    595, 595, 596, 596, 597, 597, 598, 598, 599, 599, 
+    600, 600, 601, 601, 601, 602, 602, 602, 603, 603, 
+    603, 604, 604, 604
+  ];
+
   // Toolbar states
   let allSurahs = $state<Surah[]>([]);
   let showNavigationModal = $state(false);
@@ -99,9 +115,213 @@
   let selectedAyahNumInput = $state(1);
   let selectedHalamanNum = $state(26);
 
-  // Sync selectedSurahNum when route changes (resolves compiler warning)
+  // Search/Input queries for Premium wheel picker
+  let searchSuratQuery = $state('');
+  let searchAyatQuery = $state('');
+  let searchHalamanQuery = $state('');
+
+  // Scroll sync flag to prevent loop conflicts
+  let isProgrammaticScrolling = false;
+  let scrollTimeouts: Record<string, any> = {};
+
+  // Derived states
+  let filteredSurahs = $derived(allSurahs.filter(s => s.namaLatin.toLowerCase().includes(searchSuratQuery.toLowerCase())));
+  let totalAyahsOfSelectedSurah = $derived(allSurahs.find(s => s.nomor === selectedSurahNum)?.jumlahAyat || 7);
+
+  // Mappings
+  function getHalamanFromSurahAyah(surahNum: number, ayahNum: number): number {
+    if (surahNum < 1 || surahNum > 114) return 1;
+    const startPage = SURAH_START_PAGES[surahNum - 1];
+    const endPage = surahNum === 114 ? 604 : SURAH_START_PAGES[surahNum];
+    const totalPagesForSurah = endPage - startPage;
+    const surahObj = allSurahs.find(s => s.nomor === surahNum);
+    const totalAyahs = surahObj ? surahObj.jumlahAyat : 7;
+    
+    if (totalPagesForSurah === 0) return startPage;
+    
+    const interpolated = startPage + Math.floor(((ayahNum - 1) / totalAyahs) * totalPagesForSurah);
+    return Math.min(604, Math.max(1, interpolated));
+  }
+
+  function getSurahAyahFromHalaman(page: number): { surahNum: number, ayahNum: number } {
+    if (page < 1) page = 1;
+    if (page > 604) page = 604;
+    
+    let surahNum = 1;
+    for (let i = 0; i < 114; i++) {
+      if (SURAH_START_PAGES[i] <= page) {
+        surahNum = i + 1;
+      } else {
+        break;
+      }
+    }
+    
+    const startPage = SURAH_START_PAGES[surahNum - 1];
+    const endPage = surahNum === 114 ? 604 : SURAH_START_PAGES[surahNum];
+    const totalPagesForSurah = endPage - startPage;
+    
+    const surahObj = allSurahs.find(s => s.nomor === surahNum);
+    const totalAyahs = surahObj ? surahObj.jumlahAyat : 7;
+    
+    let ayahNum = 1;
+    if (totalPagesForSurah > 0) {
+      const ratio = (page - startPage) / totalPagesForSurah;
+      ayahNum = Math.min(totalAyahs, Math.max(1, Math.round(ratio * totalAyahs) + 1));
+    }
+    
+    return { surahNum, ayahNum };
+  }
+
+  // Scroll centering
+  function scrollToSelected(behavior: 'smooth' | 'auto' = 'smooth') {
+    if (typeof document === 'undefined') return;
+    isProgrammaticScrolling = true;
+    
+    const surahEl = document.getElementById(`scroll-surat-${selectedSurahNum}`);
+    if (surahEl) surahEl.scrollIntoView({ block: 'center', behavior });
+    
+    const ayahEl = document.getElementById(`scroll-ayah-${selectedAyahNumInput}`);
+    if (ayahEl) ayahEl.scrollIntoView({ block: 'center', behavior });
+    
+    const pageEl = document.getElementById(`scroll-halaman-${selectedHalamanNum}`);
+    if (pageEl) pageEl.scrollIntoView({ block: 'center', behavior });
+
+    setTimeout(() => {
+      isProgrammaticScrolling = false;
+    }, behavior === 'smooth' ? 300 : 50);
+  }
+
+  // Scroll interaction selection
+  function handleScrollStop(container: HTMLElement, type: 'surat' | 'ayah' | 'halaman') {
+    if (isProgrammaticScrolling) return;
+    
+    const containerRect = container.getBoundingClientRect();
+    const containerCenter = containerRect.top + containerRect.height / 2;
+    
+    let closestElement: HTMLElement | null = null;
+    let closestDistance = Infinity;
+    
+    const children = container.querySelectorAll('button');
+    for (let i = 0; i < children.length; i++) {
+      const child = children[i];
+      const childRect = child.getBoundingClientRect();
+      const childCenter = childRect.top + childRect.height / 2;
+      const distance = Math.abs(containerCenter - childCenter);
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestElement = child;
+      }
+    }
+    
+    if (closestElement) {
+      const idAttr = closestElement.id;
+      const parts = idAttr.split('-');
+      const num = parseInt(parts[parts.length - 1]);
+      if (!isNaN(num)) {
+        if (type === 'surat') {
+          if (selectedSurahNum !== num) {
+            selectSurahFromPicker(num);
+          }
+        } else if (type === 'ayah') {
+          if (selectedAyahNumInput !== num) {
+            selectAyatFromPicker(num);
+          }
+        } else if (type === 'halaman') {
+          if (selectedHalamanNum !== num) {
+            selectHalamanFromPicker(num);
+          }
+        }
+      }
+    }
+  }
+
+  function onScrollContainer(e: Event, type: 'surat' | 'ayah' | 'halaman') {
+    if (isProgrammaticScrolling) return;
+    if (scrollTimeouts[type]) clearTimeout(scrollTimeouts[type]);
+    scrollTimeouts[type] = setTimeout(() => {
+      handleScrollStop(e.currentTarget as HTMLElement, type);
+    }, 150);
+  }
+
+  // Selection handlers
+  function selectSurahFromPicker(num: number) {
+    selectedSurahNum = num;
+    const total = allSurahs.find(s => s.nomor === num)?.jumlahAyat || 7;
+    if (selectedAyahNumInput > total) {
+      selectedAyahNumInput = 1;
+    }
+    selectedHalamanNum = getHalamanFromSurahAyah(num, selectedAyahNumInput);
+    searchSuratQuery = ''; // reset search to show all surahs centered
+    searchAyatQuery = String(selectedAyahNumInput);
+    searchHalamanQuery = String(selectedHalamanNum);
+    setTimeout(() => scrollToSelected('smooth'), 50);
+  }
+
+  function selectAyatFromPicker(num: number) {
+    selectedAyahNumInput = num;
+    selectedHalamanNum = getHalamanFromSurahAyah(selectedSurahNum, num);
+    searchAyatQuery = String(num);
+    searchHalamanQuery = String(selectedHalamanNum);
+    setTimeout(() => scrollToSelected('smooth'), 50);
+  }
+
+  function selectHalamanFromPicker(num: number) {
+    selectedHalamanNum = num;
+    const res = getSurahAyahFromHalaman(num);
+    selectedSurahNum = res.surahNum;
+    selectedAyahNumInput = res.ayahNum;
+    searchAyatQuery = String(res.ayahNum);
+    searchHalamanQuery = String(num);
+    setTimeout(() => scrollToSelected('smooth'), 50);
+  }
+
+  // Reactively initialize states when page/route changes
   $effect(() => {
-    selectedSurahNum = surahId;
+    if (surahId) {
+      selectedSurahNum = surahId;
+      selectedAyahNumInput = 1;
+      selectedHalamanNum = getHalamanFromSurahAyah(surahId, 1);
+      searchAyatQuery = '1';
+      searchHalamanQuery = String(selectedHalamanNum);
+    }
+  });
+
+  // Keep search inputs updated when modal is opened, and scroll centered
+  $effect(() => {
+    if (showNavigationModal) {
+      searchSuratQuery = '';
+      searchAyatQuery = String(selectedAyahNumInput);
+      searchHalamanQuery = String(selectedHalamanNum);
+      setTimeout(() => scrollToSelected('auto'), 120);
+    }
+  });
+
+  // Watch typing in inputs
+  $effect(() => {
+    const parsed = parseInt(searchAyatQuery);
+    const total = allSurahs.find(s => s.nomor === selectedSurahNum)?.jumlahAyat || 7;
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= total) {
+      if (selectedAyahNumInput !== parsed) {
+        selectedAyahNumInput = parsed;
+        selectedHalamanNum = getHalamanFromSurahAyah(selectedSurahNum, parsed);
+        searchHalamanQuery = String(selectedHalamanNum);
+        setTimeout(() => scrollToSelected('smooth'), 50);
+      }
+    }
+  });
+
+  $effect(() => {
+    const parsed = parseInt(searchHalamanQuery);
+    if (!isNaN(parsed) && parsed >= 1 && parsed <= 604) {
+      if (selectedHalamanNum !== parsed) {
+        selectedHalamanNum = parsed;
+        const res = getSurahAyahFromHalaman(parsed);
+        selectedSurahNum = res.surahNum;
+        selectedAyahNumInput = res.ayahNum;
+        searchAyatQuery = String(res.ayahNum);
+        setTimeout(() => scrollToSelected('smooth'), 50);
+      }
+    }
   });
 
   // Auto scroll states
@@ -833,76 +1053,229 @@
 
   <!-- NAVIGATION INDEX MODAL (ISI) -->
   {#if showNavigationModal}
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end md:items-center justify-center p-4 z-[100] animate-fade-in">
-      <!-- Changed from glass-emerald to bg-zinc-950 solid border to avoid double blur and visual artifacts -->
-      <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-t-3xl md:rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative">
-        <!-- Close button top-right -->
-        <button 
-          onclick={() => showNavigationModal = false} 
-          class="absolute top-4 right-4 text-xs font-bold text-zinc-400 hover:text-white"
-        >
-          Batal
-        </button>
+    <div class="fixed inset-0 bg-black/70 flex items-end md:items-center justify-center p-4 z-[100] animate-fade-in">
+      {#if $isPremium}
+        <!-- PREMIUM SEPIA WHEEL PICKER -->
+        <div class="bg-[#FDF6E2] text-[#4E3629] p-6 rounded-t-3xl md:rounded-3xl max-w-sm w-full space-y-5 shadow-2xl relative border border-[#E6DFCD]">
+          <!-- Cancel button top-right -->
+          <button 
+            onclick={() => showNavigationModal = false} 
+            class="absolute top-4 right-4 text-xs font-bold text-[#4E3629]/70 hover:text-[#4E3629] cursor-pointer"
+          >
+            Batal
+          </button>
 
-        <h3 class="font-extrabold text-sm text-white tracking-wide border-b border-white/5 pb-2 text-center">Navigasi Al-Qur'an</h3>
-        
-        <!-- Input Row -->
-        <div class="grid grid-cols-3 gap-3">
-          <!-- Surat column -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Surat</span>
-            <select 
-              bind:value={selectedSurahNum}
-              class="w-full py-2.5 px-2 rounded-xl glass border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 bg-emerald-950"
+          <h3 class="font-extrabold text-sm text-[#4E3629] tracking-wide border-b border-[#E6DFCD] pb-2 text-center">Navigasi Al-Qur'an</h3>
+
+          <!-- Input Row matching screenshot -->
+          <div class="grid grid-cols-3 gap-3">
+            <!-- Surat input -->
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] text-[#4E3629]/70 font-bold uppercase tracking-wider">Surat</span>
+              <input 
+                type="text" 
+                placeholder="Aa.." 
+                bind:value={searchSuratQuery}
+                class="w-full py-2 px-2.5 rounded-xl border border-[#E6DFCD] bg-[#FFFDFC] text-xs font-semibold text-[#4E3629] outline-none focus:border-[#6B4F3E] text-left"
+              />
+            </div>
+
+            <!-- Ayat input -->
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] text-[#4E3629]/70 font-bold uppercase tracking-wider">Ayat</span>
+              <input 
+                type="text" 
+                placeholder="1, 2.." 
+                bind:value={searchAyatQuery}
+                class="w-full py-2 px-2 rounded-xl border border-[#E6DFCD] bg-[#FFFDFC] text-xs font-semibold text-[#4E3629] outline-none focus:border-[#6B4F3E] text-center"
+              />
+            </div>
+
+            <!-- Halaman input -->
+            <div class="flex flex-col gap-1">
+              <span class="text-[10px] text-[#4E3629]/70 font-bold uppercase tracking-wider">Halaman</span>
+              <input 
+                type="text" 
+                placeholder="1, 2.." 
+                bind:value={searchHalamanQuery}
+                class="w-full py-2 px-2 rounded-xl border border-[#E6DFCD] bg-[#FFFDFC] text-xs font-semibold text-[#4E3629] outline-none focus:border-[#6B4F3E] text-center"
+              />
+            </div>
+          </div>
+
+          <!-- Three-column scroll lists container -->
+          <div class="grid grid-cols-[2.2fr_1fr_1fr] gap-1 h-52 relative overflow-hidden bg-[#FFFDFC]/30 rounded-2xl border border-[#E6DFCD]/60">
+            <!-- Top and Bottom Fade Gradients for Wheel effect -->
+            <div class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-[#FDF6E2] via-[#FDF6E2]/70 to-transparent pointer-events-none z-10"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-[#FDF6E2] via-[#FDF6E2]/70 to-transparent pointer-events-none z-10"></div>
+
+            <!-- Column 1: Surat List -->
+            <div 
+              class="no-scrollbar overflow-y-auto h-full space-y-1 py-20 px-1" 
+              id="scroll-surat-container"
+              onscroll={(e) => onScrollContainer(e, 'surat')}
             >
-              {#each allSurahs as s (s.nomor)}
-                <option value={s.nomor} class="bg-zinc-950 text-white">{s.nomor}. {s.namaLatin}</option>
+              {#each filteredSurahs as s (s.nomor)}
+                <button 
+                  id="scroll-surat-{s.nomor}"
+                  onclick={() => selectSurahFromPicker(s.nomor)}
+                  class="w-full text-left py-2 px-2.5 rounded-lg text-xs font-semibold transition-all duration-150 block scroll-snap-align-center cursor-pointer
+                    {selectedSurahNum === s.nomor 
+                      ? 'bg-[#E2E6BD] text-[#2C351E] font-bold shadow-xs' 
+                      : 'text-[#4E3629]/50 hover:text-[#4E3629] hover:bg-[#FFFDFC]/40'}"
+                >
+                  {s.nomor}. {s.namaLatin}
+                </button>
               {/each}
-            </select>
+              {#if filteredSurahs.length === 0}
+                <div class="text-[10px] text-[#4E3629]/40 text-center py-4">Tidak ada surah</div>
+              {/if}
+            </div>
+
+            <!-- Column 2: Ayat List -->
+            <div 
+              class="no-scrollbar overflow-y-auto h-full space-y-1 py-20 px-1 text-center border-l border-[#E6DFCD]/30" 
+              id="scroll-ayah-container"
+              onscroll={(e) => onScrollContainer(e, 'ayah')}
+            >
+              {#each Array.from({ length: totalAyahsOfSelectedSurah }, (_, i) => i + 1) as ayahNum}
+                <button 
+                  id="scroll-ayah-{ayahNum}"
+                  onclick={() => selectAyatFromPicker(ayahNum)}
+                  class="w-full text-center py-2 rounded-lg text-xs font-semibold transition-all duration-150 block scroll-snap-align-center cursor-pointer
+                    {selectedAyahNumInput === ayahNum 
+                      ? 'bg-[#E2E6BD] text-[#2C351E] font-bold shadow-xs' 
+                      : 'text-[#4E3629]/50 hover:text-[#4E3629] hover:bg-[#FFFDFC]/40'}"
+                >
+                  {ayahNum}
+                </button>
+              {/each}
+            </div>
+
+            <!-- Column 3: Halaman List -->
+            <div 
+              class="no-scrollbar overflow-y-auto h-full space-y-1 py-20 px-1 text-center border-l border-[#E6DFCD]/30" 
+              id="scroll-halaman-container"
+              onscroll={(e) => onScrollContainer(e, 'halaman')}
+            >
+              {#each Array.from({ length: 604 }, (_, i) => i + 1) as pNum}
+                <button 
+                  id="scroll-halaman-{pNum}"
+                  onclick={() => selectHalamanFromPicker(pNum)}
+                  class="w-full text-center py-2 rounded-lg text-xs font-semibold transition-all duration-150 block scroll-snap-align-center cursor-pointer
+                    {selectedHalamanNum === pNum 
+                      ? 'bg-[#E2E6BD] text-[#2C351E] font-bold shadow-xs' 
+                      : 'text-[#4E3629]/50 hover:text-[#4E3629] hover:bg-[#FFFDFC]/40'}"
+                >
+                  {pNum}
+                </button>
+              {/each}
+            </div>
           </div>
 
-          <!-- Ayat column -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Ayat</span>
-            <input 
-              type="number" 
-              bind:value={selectedAyahNumInput}
-              min="1" 
-              max={allSurahs.find(s => s.nomor === selectedSurahNum)?.jumlahAyat || 286}
-              class="w-full py-2 px-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white text-center focus:outline-none focus:border-emerald-500"
-            />
-          </div>
+          <!-- Divider -->
+          <div class="border-t border-[#E6DFCD] my-1"></div>
 
-          <!-- Halaman column -->
-          <div class="flex flex-col gap-1.5">
-            <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Halaman</span>
-            <input 
-              type="number" 
-              bind:value={selectedHalamanNum}
-              min="1" 
-              max="604"
-              class="w-full py-2 px-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white text-center focus:outline-none focus:border-emerald-500"
-            />
+          <!-- Action Buttons matching screenshot exactly -->
+          <div class="grid grid-cols-2 gap-4 pt-1">
+            <button 
+              onclick={() => jumpToAyah(true)}
+              class="py-3.5 rounded-2xl bg-[#F5EBD4] border border-[#E6DFCD] text-xs font-bold text-[#4E3629] hover:bg-[#EEDCBE] active:scale-95 transition-all text-center cursor-pointer"
+            >
+              Ke Tafsir
+            </button>
+            
+            <button 
+              onclick={() => jumpToAyah(false)}
+              class="py-3.5 rounded-2xl bg-[#543D31] hover:bg-[#432F25] text-white text-xs font-bold active:scale-95 transition-all text-center cursor-pointer"
+            >
+              Ke Surat
+            </button>
           </div>
         </div>
-
-        <!-- Action Buttons matching screenshot exactly -->
-        <div class="grid grid-cols-2 gap-4 pt-2">
+      {:else}
+        <!-- STANDARD NON-PREMIUM DIALOG WITH PREMIUM PROMO -->
+        <div class="bg-zinc-950 border border-emerald-500/30 p-6 rounded-t-3xl md:rounded-3xl max-w-sm w-full space-y-6 shadow-2xl relative">
+          <!-- Close button top-right -->
           <button 
-            onclick={() => jumpToAyah(true)}
-            class="py-3.5 rounded-2xl glass border border-white/10 text-xs font-bold text-zinc-300 hover:text-white active:scale-95 transition-all text-center"
+            onclick={() => showNavigationModal = false} 
+            class="absolute top-4 right-4 text-xs font-bold text-zinc-400 hover:text-white cursor-pointer"
           >
-            Ke Tafsir
+            Batal
           </button>
+
+          <h3 class="font-extrabold text-sm text-white tracking-wide border-b border-white/5 pb-2 text-center">Navigasi Al-Qur'an</h3>
           
+          <!-- Input Row -->
+          <div class="grid grid-cols-3 gap-3">
+            <!-- Surat column -->
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Surat</span>
+              <select 
+                bind:value={selectedSurahNum}
+                class="w-full py-2.5 px-2 rounded-xl glass border border-white/10 text-xs font-semibold text-white focus:outline-none focus:border-emerald-500 bg-emerald-950"
+              >
+                {#each allSurahs as s (s.nomor)}
+                  <option value={s.nomor} class="bg-zinc-950 text-white">{s.nomor}. {s.namaLatin}</option>
+                {/each}
+              </select>
+            </div>
+
+            <!-- Ayat column -->
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Ayat</span>
+              <input 
+                type="number" 
+                bind:value={selectedAyahNumInput}
+                min="1" 
+                max={allSurahs.find(s => s.nomor === selectedSurahNum)?.jumlahAyat || 286}
+                class="w-full py-2 px-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white text-center focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+
+            <!-- Halaman column -->
+            <div class="flex flex-col gap-1.5">
+              <span class="text-[10px] text-zinc-400 font-bold uppercase tracking-wider">Halaman</span>
+              <input 
+                type="number" 
+                bind:value={selectedHalamanNum}
+                min="1" 
+                max="604"
+                class="w-full py-2 px-3 rounded-xl glass border border-white/10 text-xs font-semibold text-white text-center focus:outline-none focus:border-emerald-500"
+              />
+            </div>
+          </div>
+
+          <!-- PREMIUM CALL TO ACTION -->
           <button 
-            onclick={() => jumpToAyah(false)}
-            class="py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold active:scale-95 transition-all text-center"
+            onclick={() => { showNavigationModal = false; showPremiumPaymentModal.set(true); }}
+            class="w-full py-3.5 px-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-between text-left text-xs font-bold text-amber-400 hover:bg-amber-500/20 transition-all cursor-pointer"
           >
-            Ke Surat
+            <div class="flex items-center gap-2">
+              <Crown class="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span>Buka Pemilih Premium Wheel 3-Kolom</span>
+            </div>
+            <span class="text-[10px] font-extrabold text-amber-300">UPGRADE</span>
           </button>
+
+          <!-- Action Buttons matching screenshot exactly -->
+          <div class="grid grid-cols-2 gap-4 pt-2">
+            <button 
+              onclick={() => jumpToAyah(true)}
+              class="py-3.5 rounded-2xl glass border border-white/10 text-xs font-bold text-zinc-300 hover:text-white active:scale-95 transition-all text-center cursor-pointer"
+            >
+              Ke Tafsir
+            </button>
+            
+            <button 
+              onclick={() => jumpToAyah(false)}
+              class="py-3.5 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold active:scale-95 transition-all text-center cursor-pointer"
+            >
+              Ke Surat
+            </button>
+          </div>
         </div>
-      </div>
+      {/if}
     </div>
   {/if}
 
@@ -946,3 +1319,17 @@
   {/if}
 
 </div>
+
+<style>
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+    scroll-snap-type: y mandatory;
+  }
+  .scroll-snap-align-center {
+    scroll-snap-align: center;
+  }
+</style>
