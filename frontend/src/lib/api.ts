@@ -84,12 +84,12 @@ export interface PrayerData {
 }
 
 // Fetching functions
-const EQURAN_BASE_URL = import.meta.env.PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+const EQURAN_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
 const ALADHAN_BASE_URL = 'https://api.aladhan.com/v1';
 
 export async function fetchSurahs(): Promise<Surah[]> {
   try {
-    const res = await fetch(`${EQURAN_BASE_URL}/surat`);
+    const res = await fetch(`${EQURAN_BASE_URL}/surah`);
     if (!res.ok) throw new Error('Failed to fetch Surahs');
     const data = await res.json();
     return data.data;
@@ -102,7 +102,7 @@ export async function fetchSurahs(): Promise<Surah[]> {
 
 export async function fetchSurahDetail(number: number): Promise<SurahDetail> {
   try {
-    const res = await fetch(`${EQURAN_BASE_URL}/surat/${number}`);
+    const res = await fetch(`${EQURAN_BASE_URL}/surah/${number}`);
     if (!res.ok) throw new Error(`Failed to fetch Surah ${number}`);
     const data = await res.json();
     return data.data;

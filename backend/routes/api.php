@@ -15,6 +15,10 @@ Route::prefix('v1')->group(function () {
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/login', [AuthController::class, 'login']);
 
+    // Social Auth Routes
+    Route::get('/auth/{provider}/redirect', [\App\Http\Controllers\Api\V1\SocialAuthController::class, 'redirect']);
+    Route::get('/auth/{provider}/callback', [\App\Http\Controllers\Api\V1\SocialAuthController::class, 'callback']);
+
     // Quran API (Publicly accessible)
     Route::get('/surah', [QuranController::class, 'getSurahs']);
     Route::get('/surah/{id}', [QuranController::class, 'getSurah']);

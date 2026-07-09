@@ -5,6 +5,8 @@ namespace App\Services;
 use App\Interfaces\QuranServiceInterface;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use App\Models\Surah;
+use App\Models\Ayah;
 
 class QuranService implements QuranServiceInterface
 {
@@ -12,17 +14,26 @@ class QuranService implements QuranServiceInterface
 
     public function getSurahs()
     {
-        return Cache::remember('quran_surahs', $this->ttl, function () {
-            $response = Http::get('https://equran.id/api/v2/surat');
-            return $response->json()['data'] ?? [];
+        return Cache::remember('quran_surahs_db', $this->ttl, function () {
+            return Surah::orderBy('nomor')->get();
         });
     }
 
     public function getSurah(int $id)
     {
-        return Cache::remember("quran_surah_{$id}", $this->ttl, function () use ($id) {
-            $response = Http::get("https://equran.id/api/v2/surat/{$id}");
-            return $response->json()['data'] ?? null;
+        return Cache::remember("quran_surah_db_{$id}", $this->ttl, function () use ($id) {
+            $surah = Surah::where('nomor', $id)->with('ayahs')->first();
+            
+            if (!$surah) {
+                return null;
+            }
+            
+            // Format to match expected equran.id format for frontend compatibility if needed
+            $data = $surah->toArray();
+            $data['ayat'] = $data['ayahs'];
+            unset($data['ayahs']);
+            
+            return $data;
         });
     }
 
@@ -54,31 +65,26 @@ class QuranService implements QuranServiceInterface
 
     public function search(string $query)
     {
-        // Dynamic search, cache for 1 hour
-        return Cache::remember("quran_search_{$query}", 3600, function () use ($query) {
-            $response = Http::get('https://api.quran.com/api/v4/search', [
-                'q' => $query,
-                'size' => 20,
-                'language' => 'id'
-            ]);
-            return $response->json()['search'] ?? [];
+        // Dynamic search in Database
+        return Cache::remember("quran_search_db_{$query}", 3600, function () use ($query) {
+            return Ayah::with('surah')
+                ->where('teks_indonesia', 'like', "%{$query}%")
+                ->orWhere('teks_latin', 'like', "%{$query}%")
+                ->orWhere('teks_arab', 'like', "%{$query}%")
+                ->take(50)
+                ->get();
         });
     }
 
     public function getRandomAyah()
     {
-        // Don't cache random, or cache for a very short time
-        $randomVerseKey = 'quran_random_ayah';
-        
-        $response = Http::get('https://api.quran.com/api/v4/verses/random', [
-            'language' => 'id',
-            'translations' => '33' // Indonesian
-        ]);
-        return $response->json()['verse'] ?? null;
+        // Random from Database
+        return Ayah::with('surah')->inRandomOrder()->first();
     }
 
     public function getTafsir(int $surahId)
     {
+        // We haven't migrated tafsir, keep using external API for now
         return Cache::remember("quran_tafsir_{$surahId}", $this->ttl, function () use ($surahId) {
             $response = Http::get("https://equran.id/api/v2/tafsir/{$surahId}");
             return $response->json()['data'] ?? null;
@@ -87,24 +93,21 @@ class QuranService implements QuranServiceInterface
 
     public function getAyah(int $surahId, int $ayahId)
     {
-        return Cache::remember("quran_ayah_{$surahId}_{$ayahId}", $this->ttl, function () use ($surahId, $ayahId) {
-            $surah = $this->getSurah($surahId);
-            if ($surah && isset($surah['ayat'])) {
-                foreach ($surah['ayat'] as $ayat) {
-                    if ($ayat['nomorAyat'] == $ayahId) {
-                        return $ayat;
-                    }
-                }
-            }
-            return null;
+        return Cache::remember("quran_ayah_db_{$surahId}_{$ayahId}", $this->ttl, function () use ($surahId, $ayahId) {
+            $surah = Surah::where('nomor', $surahId)->first();
+            if (!$surah) return null;
+            
+            return Ayah::where('surah_id', $surah->id)
+                ->where('nomor_ayat', $ayahId)
+                ->first();
         });
     }
 
     public function getAudio(int $surahId)
     {
-        return Cache::remember("quran_audio_{$surahId}", $this->ttl, function () use ($surahId) {
-            $surah = $this->getSurah($surahId);
-            return $surah['audioFull'] ?? null;
+        return Cache::remember("quran_audio_db_{$surahId}", $this->ttl, function () use ($surahId) {
+            $surah = Surah::where('nomor', $surahId)->first();
+            return $surah ? $surah->audio_full : null;
         });
     }
 
