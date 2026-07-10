@@ -166,7 +166,7 @@
                         </svg>
                     </div>
                     <span class="text-sm text-zinc-400 leading-snug">
-                        Saya menyetujui <a href="#" class="text-[#10B981] hover:underline">syarat & kebijakan</a> yang berlaku
+                        Saya menyetujui <a href="/terms" class="text-[#10B981] hover:underline">syarat & kebijakan</a> yang berlaku
                     </span>
                 </label>
             </div>
