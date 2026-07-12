@@ -84,43 +84,51 @@ export interface PrayerData {
 }
 
 // Fetching functions
-const EQURAN_BASE_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000/api/v1';
+const API_BASE = import.meta.env.VITE_API_URL ?? 'http://127.0.0.1:8000/api/v1';
 const ALADHAN_BASE_URL = 'https://api.aladhan.com/v1';
 
 export async function fetchSurahs(): Promise<Surah[]> {
   try {
-    const res = await fetch(`${EQURAN_BASE_URL}/surah`);
-    if (!res.ok) throw new Error('Failed to fetch Surahs');
+    const res = await fetch(`${API_BASE}/surah`);
+    if (!res.ok) throw new Error("Gagal mengambil data Al-Qur'an.");
     const data = await res.json();
     return data.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error fetching surahs:', error);
-    // Return empty list or fallback to check offline
-    throw error;
+    if (error.message === "Gagal mengambil data Al-Qur'an.") {
+      throw error;
+    }
+    throw new Error('Server Laravel tidak dapat dihubungi. Pastikan backend berjalan.');
   }
 }
 
 export async function fetchSurahDetail(number: number): Promise<SurahDetail> {
   try {
-    const res = await fetch(`${EQURAN_BASE_URL}/surah/${number}`);
-    if (!res.ok) throw new Error(`Failed to fetch Surah ${number}`);
+    const res = await fetch(`${API_BASE}/surah/${number}`);
+    if (!res.ok) throw new Error("Gagal mengambil data Al-Qur'an.");
     const data = await res.json();
     return data.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error fetching surah ${number} detail:`, error);
-    throw error;
+    if (error.message === "Gagal mengambil data Al-Qur'an.") {
+      throw error;
+    }
+    throw new Error('Server Laravel tidak dapat dihubungi. Pastikan backend berjalan.');
   }
 }
 
 export async function fetchTafsir(number: number): Promise<TafsirDetail> {
   try {
-    const res = await fetch(`${EQURAN_BASE_URL}/tafsir/${number}`);
-    if (!res.ok) throw new Error(`Failed to fetch Tafsir for Surah ${number}`);
+    const res = await fetch(`${API_BASE}/tafsir/${number}`);
+    if (!res.ok) throw new Error("Gagal mengambil data Al-Qur'an.");
     const data = await res.json();
     return data.data;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`Error fetching tafsir for surah ${number}:`, error);
-    throw error;
+    if (error.message === "Gagal mengambil data Al-Qur'an.") {
+      throw error;
+    }
+    throw new Error('Server Laravel tidak dapat dihubungi. Pastikan backend berjalan.');
   }
 }
 

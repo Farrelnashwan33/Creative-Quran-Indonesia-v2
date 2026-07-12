@@ -2,7 +2,7 @@ import { fail, redirect } from '@sveltejs/kit'
 import type { Actions } from './$types'
 
 export const actions: Actions = {
-  register: async ({ request, locals: { supabase } }) => {
+  signUp: async ({ request, locals: { supabase } }) => {
     const formData = await request.formData()
     const name = formData.get('name') as string
     const username = formData.get('username') as string
@@ -18,7 +18,7 @@ export const actions: Actions = {
       return fail(400, { error: 'Password tidak cocok', name, username, email })
     }
 
-    const { error } = await supabase.auth.signUp({
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -30,12 +30,33 @@ export const actions: Actions = {
     })
 
     if (error) {
-      return fail(400, { error: error.message, name, username, email })
+      console.error('SignUp error:', error)
+      return fail(400, {
+        error: error.message ?? 'Terjadi kesalahan saat mendaftar. Silakan coba lagi.',
+        name,
+        username,
+        email
+      })
     }
 
-    // Usually after signup with email verification, it redirects to a confirmation page.
-    // If no email verification is required, they might be logged in immediately.
-    // Let's redirect to /login with a success message or /home directly.
-    throw redirect(303, '/home')
+    // Check if email confirmation is required.
+    // When email confirmation is ON  → signUpData.session is null
+    // When email confirmation is OFF → signUpData.session is set (auto-login by Supabase)
+    //
+    // In BOTH cases we sign the user out immediately and redirect to /login
+    // with a success query param so they must explicitly log in.
+    // This prevents auto-login into the dashboard after register.
+    if (signUpData.session) {
+      // Email confirmation is disabled — Supabase auto-created a session.
+      // Sign it out immediately so the user is forced to log in manually.
+      await supabase.auth.signOut()
+    }
+
+    const needsEmailConfirmation = !signUpData.session
+
+    throw redirect(303, needsEmailConfirmation
+      ? '/login?registered=1&confirm=1'
+      : '/login?registered=1'
+    )
   },
 }

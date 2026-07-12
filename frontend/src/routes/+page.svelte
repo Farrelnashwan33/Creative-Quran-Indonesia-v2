@@ -1,12 +1,6 @@
 <script lang="ts">
-  import { BookOpen, UserCircle2, ArrowRight } from '@lucide/svelte';
-  import { guestMode } from '$lib/auth';
+  import { UserCircle2, ArrowRight } from '@lucide/svelte';
   import { goto } from '$app/navigation';
-
-  function continueAsGuest() {
-    $guestMode = true;
-    goto('/home');
-  }
 </script>
 
 <svelte:head>
@@ -21,9 +15,7 @@
   <!-- Content Container -->
   <div class="z-10 w-full max-w-sm flex flex-col items-center animate-fade-in">
     <!-- App Logo -->
-    <div class="w-20 h-20 bg-gradient-to-tr from-[#059669] to-[#10B981] rounded-2xl flex items-center justify-center shadow-[0_20px_50px_rgba(16,185,129,0.3)] mb-6 animate-float">
-      <BookOpen class="w-10 h-10 text-white" />
-    </div>
+    <img src="/favicon.jpeg" alt="Creative Qur'an Logo" class="w-20 h-20 rounded-2xl shadow-[0_20px_50px_rgba(16,185,129,0.3)] mb-6 animate-float object-cover" />
 
     <!-- Title & Subtitle -->
     <h1 class="text-3xl font-black mb-1 tracking-wide text-center">
@@ -54,14 +46,6 @@
       </a>
     </div>
 
-    <!-- Guest Mode -->
-    <button 
-      onclick={continueAsGuest}
-      class="mt-8 flex items-center gap-2 text-zinc-400 hover:text-white transition-colors group text-sm font-medium"
-    >
-      <UserCircle2 class="w-5 h-5 group-hover:text-[#10B981] transition-colors" />
-      Lanjut sebagai Tamu
-      <ArrowRight class="w-4 h-4 opacity-0 -ml-2 group-hover:opacity-100 group-hover:ml-0 transition-all text-[#10B981]" />
-    </button>
+
   </div>
 </div>

@@ -14,24 +14,55 @@ class QuranService implements QuranServiceInterface
 
     public function getSurahs()
     {
-        return Cache::remember('quran_surahs_db', $this->ttl, function () {
-            return Surah::orderBy('nomor')->get();
+        return Cache::remember('quran_surahs_db_v3', $this->ttl, function () {
+            return Surah::orderBy('nomor')->get()->map(function ($surah) {
+                return [
+                    'nomor' => $surah->nomor,
+                    'nama' => $surah->nama,
+                    'namaLatin' => $surah->nama_latin,
+                    'jumlahAyat' => $surah->jumlah_ayat,
+                    'tempatTurun' => $surah->tempat_turun,
+                    'arti' => $surah->arti,
+                    'deskripsi' => $surah->deskripsi,
+                    'audioFull' => is_string($surah->audio_full) ? json_decode($surah->audio_full, true) : $surah->audio_full
+                ];
+            })->toArray();
         });
     }
 
     public function getSurah(int $id)
     {
-        return Cache::remember("quran_surah_db_{$id}", $this->ttl, function () use ($id) {
+        return Cache::remember("quran_surah_db_v3_{$id}", $this->ttl, function () use ($id) {
             $surah = Surah::where('nomor', $id)->with('ayahs')->first();
             
             if (!$surah) {
                 return null;
             }
             
-            // Format to match expected equran.id format for frontend compatibility if needed
-            $data = $surah->toArray();
-            $data['ayat'] = $data['ayahs'];
-            unset($data['ayahs']);
+            $data = [
+                'nomor' => $surah->nomor,
+                'nama' => $surah->nama,
+                'namaLatin' => $surah->nama_latin,
+                'jumlahAyat' => $surah->jumlah_ayat,
+                'tempatTurun' => $surah->tempat_turun,
+                'arti' => $surah->arti,
+                'deskripsi' => $surah->deskripsi,
+                'audioFull' => is_string($surah->audio_full) ? json_decode($surah->audio_full, true) : $surah->audio_full,
+            ];
+            
+            $ayat = [];
+            foreach ($surah->ayahs as $ayah) {
+                $ayat[] = [
+                    'nomorAyat' => $ayah->nomor_ayat,
+                    'teksArab' => $ayah->teks_arab,
+                    'teksLatin' => $ayah->teks_latin,
+                    'teksIndonesia' => $ayah->teks_indonesia,
+                    'audio' => is_string($ayah->audio) ? json_decode($ayah->audio, true) : $ayah->audio,
+                ];
+            }
+            $data['ayat'] = $ayat;
+            $data['suratSebelumnya'] = false;
+            $data['suratSelanjutnya'] = false;
             
             return $data;
         });

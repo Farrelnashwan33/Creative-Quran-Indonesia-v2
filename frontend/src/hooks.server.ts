@@ -1,7 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { type Handle, redirect } from '@sveltejs/kit'
 
-const protectedRoutes = ['/home', '/premium', '/quran', '/search', '/settings', '/sholat', '/dashboard']
+// Auth routes: redirect logged-in users away from these
 const authRoutes = ['/login', '/register', '/forgot-password', '/verify-email']
 
 export const handle: Handle = async ({ event, resolve }) => {
@@ -41,16 +41,22 @@ export const handle: Handle = async ({ event, resolve }) => {
 
   const path = event.url.pathname
 
-  // Redirect users who are NOT logged in but trying to access protected routes
-  const isProtectedRoute = protectedRoutes.some(route => path.startsWith(route))
-  if (!session && isProtectedRoute) {
-    throw redirect(303, '/login')
-  }
-
-  // Redirect users who ARE logged in but trying to access auth routes
   const isAuthRoute = authRoutes.some(route => path === route || path.startsWith(`${route}/`))
-  if (session && isAuthRoute) {
-    throw redirect(303, '/home')
+  
+  // Define protected routes (everything except auth routes, api routes, and root '/')
+  // We'll treat anything that is not '/' and not authRoute as a protected dashboard route
+  const isPublicRoute = path === '/' || isAuthRoute || path.startsWith('/api') || path.startsWith('/auth')
+
+  if (!session) {
+    // If not logged in and trying to access dashboard routes, redirect to login
+    if (!isPublicRoute) {
+      throw redirect(303, '/login')
+    }
+  } else {
+    // If logged in and trying to access auth pages OR the welcome page ('/'), redirect to dashboard
+    if (isAuthRoute || path === '/') {
+      throw redirect(303, '/home')
+    }
   }
 
   return resolve(event, {

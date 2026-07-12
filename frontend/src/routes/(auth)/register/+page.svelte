@@ -1,15 +1,15 @@
 <script lang="ts">
     import { User, Lock, Mail, Loader2, AtSign } from '@lucide/svelte';
     import { enhance } from '$app/forms';
-    import { supabase } from '$lib/supabase';
 
-    let { form } = $props();
+    let { data, form } = $props();
     let agreeToTerms = $state(false);
     let isLoading = $state(false);
-    let errorMessage = $derived(form?.error || '');
+    let customError = $state('');
+    let errorMessage = $derived(customError || form?.error || '');
 
     async function handleGoogleLogin() {
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { error } = await data.supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/v1/callback`
@@ -18,21 +18,11 @@
 
         if (error) {
             console.error('Google register error:', error);
+            customError = 'Google Sign In gagal. Silakan coba lagi.';
         }
     }
 
-    async function handleAppleLogin() {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'apple',
-            options: {
-                redirectTo: `${window.location.origin}/auth/v1/callback`
-            }
-        });
 
-        if (error) {
-            console.error('Apple register error:', error);
-        }
-    }
 </script>
 
 <svelte:head>
@@ -65,7 +55,7 @@
             </div>
         {/if}
 
-            <form method="POST" action="?/register" use:enhance={() => { isLoading = true; return async ({ update }) => { isLoading = false; update(); } }} class="space-y-4">
+            <form method="POST" action="?/signUp" use:enhance={() => { isLoading = true; return async ({ update }) => { isLoading = false; update(); } }} class="space-y-4">
             <!-- Nama Lengkap -->
             <div class="space-y-2">
                 <label for="name" class="text-sm font-medium text-zinc-300">Nama Lengkap</label>
@@ -205,13 +195,7 @@
                 </svg>
                 Daftar dengan Google
             </button>
-            <button type="button" onclick={handleAppleLogin} class="w-full flex items-center justify-center gap-3 bg-[#123B35] hover:bg-[#0F312B] text-white py-3.5 rounded-[16px] transition-all border border-white/5 font-medium">
-                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M16.365 21.435c-1.575 1.14-3.18 1.125-4.53.015-1.56-1.275-2.61-3.66-2.73-5.25-.09-1.32.33-2.67 1.14-3.6 1.485-1.74 3.93-2.22 5.535-.78 1.545 1.425 2.22 3.615 1.965 5.595-.195 1.44-1.26 2.925-2.385 4.02zm-3.3-11.415c-.48-1.545.69-3.465 2.505-4.05 1.65-.54 3.42.3 4.035 1.95.435 1.185.06 2.655-1.02 3.36-1.545 1.005-3.72.69-4.59-1.26z"/>
-                    <path d="M12.148 23.978c-.73-.082-1.465-.246-2.184-.504-2.112-.76-4.103-2.457-5.35-4.56C3.125 16.398 2.378 13.067 3.322 9.878c.84-2.825 2.766-5.263 5.378-6.786 1.83-1.066 3.92-1.482 6.02-.916 1.487.404 2.923 1.258 4.148 2.36.994.896 1.872 2.012 2.518 3.208 1.472 2.732 1.636 5.86.376 8.706-1.127 2.548-3.167 4.606-5.632 5.856-1.246.63-2.6.993-3.983 1.07-1.157.065-2.348-.12-3.447-.417l-.547-.18z"/>
-                </svg>
-                Daftar dengan Apple
-            </button>
+
         </div>
 
         <div class="mt-8 text-center text-sm text-zinc-400">

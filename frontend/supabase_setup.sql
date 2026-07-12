@@ -7,6 +7,7 @@
 create table if not exists public.profiles (
   id uuid not null references auth.users on delete cascade,
   full_name text,
+  username text,
   email text,
   avatar_url text,
   provider text,
@@ -43,6 +44,7 @@ declare
   _provider text;
   _full_name text;
   _avatar_url text;
+  _username text;
 begin
   -- Get provider from app_metadata
   _provider := new.app_metadata->>'provider';
@@ -51,7 +53,13 @@ begin
   _full_name := coalesce(
     new.raw_user_meta_data->>'full_name', 
     new.raw_user_meta_data->>'name', 
-    new.raw_user_meta_data->>'custom_claims'->>'name',
+    new.raw_user_meta_data->'custom_claims'->>'name',
+    ''
+  );
+
+  -- Extract username intelligently
+  _username := coalesce(
+    new.raw_user_meta_data->>'username', 
     ''
   );
 
@@ -63,10 +71,11 @@ begin
   );
 
   -- UPSERT into public.profiles
-  insert into public.profiles (id, full_name, email, avatar_url, provider, created_at, updated_at)
+  insert into public.profiles (id, full_name, username, email, avatar_url, provider, created_at, updated_at)
   values (
     new.id, 
     _full_name,
+    _username,
     new.email,
     _avatar_url,
     coalesce(_provider, 'email'),
@@ -75,6 +84,7 @@ begin
   )
   on conflict (id) do update set
     full_name = excluded.full_name,
+    username = excluded.username,
     email = excluded.email,
     avatar_url = excluded.avatar_url,
     provider = excluded.provider,

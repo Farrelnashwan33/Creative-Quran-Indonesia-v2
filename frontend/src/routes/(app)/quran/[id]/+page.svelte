@@ -454,8 +454,8 @@
 
       // Update reading statistics count for today
       updateStats();
-    } catch (e) {
-      error = "Gagal memuat detail surah atau tafsir.";
+    } catch (e: any) {
+      error = e.message;
     } finally {
       loading = false;
     }
@@ -728,9 +728,17 @@
   {:else if error || !surah}
     <div class="glass border border-white/5 rounded-3xl p-8 text-center max-w-md mx-auto space-y-4">
       <p class="text-sm text-zinc-400 font-medium">{error || 'Gagal memuat surah.'}</p>
-      <a href="/quran" class="inline-block px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-lg">
-        Kembali
-      </a>
+      <div class="flex items-center justify-center gap-3">
+        <a href="/quran" class="inline-block px-4 py-2 bg-white/10 text-white font-bold text-xs rounded-xl hover:bg-white/20 transition-all">
+          Kembali
+        </a>
+        <button 
+          onclick={() => loadData(surahId)}
+          class="inline-block px-4 py-2 bg-emerald-600 text-white font-bold text-xs rounded-xl shadow-lg hover:bg-emerald-500 transition-all"
+        >
+          Coba Lagi
+        </button>
+      </div>
     </div>
   {:else}
     <!-- SURAH HEADER CARD -->

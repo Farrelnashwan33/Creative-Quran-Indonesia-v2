@@ -1,14 +1,24 @@
 <script lang="ts">
-    import { BookOpen, User, Lock, ArrowRight, Loader2, Mail } from '@lucide/svelte';
+    import { BookOpen, User, Lock, ArrowRight, Loader2, Mail, CheckCircle } from '@lucide/svelte';
     import { enhance } from '$app/forms';
-    import { supabase } from '$lib/supabase';
+    import { page } from '$app/stores';
 
-    let { form } = $props();
+    let { data, form } = $props();
     let isLoading = $state(false);
-    let errorMessage = $derived(form?.error || '');
+    let customError = $state('');
+    let errorMessage = $derived(customError || form?.error || '');
+
+    // Show success notification when redirected from register page
+    let successMessage = $derived(
+        $page.url.searchParams.get('registered') === '1'
+            ? $page.url.searchParams.get('confirm') === '1'
+                ? 'Registrasi berhasil! Silakan cek email Anda untuk verifikasi akun, lalu login di bawah.'
+                : 'Registrasi berhasil! Silakan login menggunakan akun yang baru dibuat.'
+            : null
+    );
 
     async function handleGoogleLogin() {
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { error } = await data.supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
                 redirectTo: `${window.location.origin}/auth/v1/callback`
@@ -17,21 +27,11 @@
 
         if (error) {
             console.error('Google login error:', error);
+            customError = 'Google Sign In gagal. Silakan coba lagi.';
         }
     }
 
-    async function handleAppleLogin() {
-        const { error } = await supabase.auth.signInWithOAuth({
-            provider: 'apple',
-            options: {
-                redirectTo: `${window.location.origin}/auth/v1/callback`
-            }
-        });
 
-        if (error) {
-            console.error('Apple login error:', error);
-        }
-    }
 </script>
 
 <svelte:head>
@@ -74,6 +74,13 @@
                 </h1>
                 <p class="text-zinc-400">Selamat Datang Kembali</p>
             </div>
+
+            {#if successMessage}
+                <div class="mb-6 p-4 rounded-[12px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium animate-fade-in flex items-start gap-2">
+                    <CheckCircle class="h-5 w-5 shrink-0 mt-0.5" />
+                    {successMessage}
+                </div>
+            {/if}
 
             {#if errorMessage}
                 <div class="mb-6 p-4 rounded-[12px] bg-red-500/10 border border-red-500/20 text-red-400 text-sm font-medium animate-fade-in flex items-center gap-2">
@@ -172,13 +179,7 @@
                     </svg>
                     Continue with Google
                 </button>
-                <button type="button" onclick={handleAppleLogin} class="w-full flex items-center justify-center gap-3 bg-[#123B35] hover:bg-[#0F312B] text-white py-3.5 rounded-[16px] transition-all border border-white/5 font-medium">
-                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M16.365 21.435c-1.575 1.14-3.18 1.125-4.53.015-1.56-1.275-2.61-3.66-2.73-5.25-.09-1.32.33-2.67 1.14-3.6 1.485-1.74 3.93-2.22 5.535-.78 1.545 1.425 2.22 3.615 1.965 5.595-.195 1.44-1.26 2.925-2.385 4.02zm-3.3-11.415c-.48-1.545.69-3.465 2.505-4.05 1.65-.54 3.42.3 4.035 1.95.435 1.185.06 2.655-1.02 3.36-1.545 1.005-3.72.69-4.59-1.26z"/>
-                        <path d="M12.148 23.978c-.73-.082-1.465-.246-2.184-.504-2.112-.76-4.103-2.457-5.35-4.56C3.125 16.398 2.378 13.067 3.322 9.878c.84-2.825 2.766-5.263 5.378-6.786 1.83-1.066 3.92-1.482 6.02-.916 1.487.404 2.923 1.258 4.148 2.36.994.896 1.872 2.012 2.518 3.208 1.472 2.732 1.636 5.86.376 8.706-1.127 2.548-3.167 4.606-5.632 5.856-1.246.63-2.6.993-3.983 1.07-1.157.065-2.348-.12-3.447-.417l-.547-.18z"/>
-                    </svg>
-                    Continue with Apple
-                </button>
+
             </div>
 
             <div class="mt-8 text-center text-sm text-zinc-400">

@@ -10,12 +10,16 @@
   let activeTab = $state<'surah' | 'juz'>('surah');
 
   onMount(async () => {
+    console.log('quran/+page.svelte onMount started');
     try {
       surahs = await fetchSurahs();
-    } catch (e) {
-      error = "Gagal memuat daftar Surah. Silakan periksa koneksi internet Anda.";
+      console.log('fetchSurahs succeeded', surahs.length);
+    } catch (e: any) {
+      console.log('fetchSurahs failed, setting error to:', e.message);
+      error = e.message;
     } finally {
       loading = false;
+      console.log('finally block, loading set to false. Current error:', error);
     }
   });
 
@@ -157,7 +161,7 @@
     <div class="glass border border-white/5 rounded-2xl p-8 text-center max-w-md mx-auto space-y-4">
       <p class="text-sm text-zinc-400 font-medium">{error}</p>
       <button 
-        onclick={async () => { loading = true; error = null; surahs = await fetchSurahs().catch(e => { error = e.message; return []; }); loading = false; }} 
+        onclick={async () => { loading = true; error = null; try { surahs = await fetchSurahs(); } catch (e: any) { error = e.message; surahs = []; } loading = false; }} 
         class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg"
       >
         Coba Lagi
